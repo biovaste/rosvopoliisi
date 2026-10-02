@@ -25,7 +25,7 @@ export const BASE_Y = 470;
 // ---------- Buildings ----------
 
 /** Centre x of the four building slots (left to right). */
-export const SLOT_CX = [445, 790, 985, 1170];
+export const SLOT_CX = [445, 785, 962, 1130];
 
 export interface Placed {
   art: BuildingArt;

@@ -30,7 +30,7 @@ MAGENTA = (255, 0, 255)
 BUILDINGS = {
     'home': {'box': (200, 240), 'door': 0.5, 'erase': [(0, 640, 492, 1140)], 'seeds': []},
     'bakery': {'box': (200, 240), 'door': 0.8, 'erase': [], 'seeds': [(300, 760), (420, 760)]},
-    'bank': {'box': (200, 240), 'door': 0.5, 'erase': [], 'seeds': []},
+    'bank': {'box': (250, 250), 'door': 0.5, 'erase': [], 'seeds': []},
     'jewelry': {'box': (200, 240), 'door': 0.79, 'erase': [], 'seeds': [(300, 760), (420, 760)]},
     'station': {'box': (330, 290), 'door': 0.5, 'erase': [], 'seeds': []},
 }

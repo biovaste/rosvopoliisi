@@ -160,7 +160,8 @@ export function buildScene(app: HTMLElement): Scene {
   });
 
   // The building row.
-  town.buildings.forEach((b, i) => picture(stage, placeBuilding(b.kind, i), BASE_Y - (i === 3 ? 1 : 0)));
+  // The wide bank sits slightly behind its neighbours so they overlap its edges.
+  town.buildings.forEach((b, i) => picture(stage, placeBuilding(b.kind, i), BASE_Y - (b.kind === 'bank' ? 2 : i === 3 ? 1 : 0)));
 
   // Street furniture.
   place(div('prop lamp', stage, art.lampSvg()), 506, 244, 502);
