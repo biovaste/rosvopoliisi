@@ -21,6 +21,7 @@ export function chimneySpotSvg(): string {
     <path d="${wob(rect(6, 10, 48, 70), 1)}" fill="#b0614f" stroke="${OUT}" stroke-width="3.5"/>
     <path d="M6 30 H54 M6 50 H54 M28 10 V30 M18 30 V50 M40 50 V70" stroke="#7b3a32" stroke-width="2"/>
     <path d="${wob(rect(0, 0, 60, 14), 1)}" fill="#8d4339" stroke="${OUT}" stroke-width="3.5"/>
+    <g class="smoke">${[0, 1, 2].map((i) => `<circle class="puff p${i}" cx="34" cy="-6" r="${7 + i * 2}" fill="#fff" opacity=".8"/>`).join('')}</g>
   </svg>`;
 }
 

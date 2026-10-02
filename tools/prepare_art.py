@@ -131,7 +131,7 @@ def main():
     meta['tiles']['sand'] = tile('tile-sand', 'tile-sand.jpg', True, (240, 240))
     meta['tiles']['sidewalk'] = tile('tile-sidewalk', 'tile-sidewalk.jpg', False, (120, 240), mirror_v=True)
     if os.path.exists(os.path.join(SRC, 'tile-street.jpg')):
-        meta['tiles']['street'] = tile('tile-street', 'tile-street.jpg', False, (200, 200))
+        meta['tiles']['street'] = tile('tile-street', 'tile-street.jpg', True, (200, 200))
     for s in ['sky-day', 'sky-evening', 'sky-night']:
         sky(s, meta)
     with open(META, 'w') as f:

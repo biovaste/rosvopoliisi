@@ -25,6 +25,8 @@ export interface Owner {
   pos: Pt;
   /** Lives in a building and always stands at its door. */
   home: boolean;
+  /** Height multiplier: children are smaller. */
+  size: number;
   /** The item is currently stolen. */
   robbed: boolean;
   /** Already robbed (and helped) this cycle. */

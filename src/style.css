@@ -1081,3 +1081,87 @@ body[data-time='day'] .art-sky .sun {
 .jailwin .jw-face.on {
   transform: translate3d(0, 8px, 0) scale(1);
 }
+
+/* ---------- Life: birds, glances, landing ---------- */
+
+.bird {
+  position: absolute;
+  left: 0;
+  top: 0;
+  animation: fly 26s linear infinite;
+}
+.bird.b0 {
+  top: 90px;
+}
+.bird.b1 {
+  top: 120px;
+  animation-delay: -1.2s;
+}
+.bird.b2 {
+  top: 70px;
+  animation-delay: -14s;
+  animation-duration: 32s;
+}
+.wing {
+  transform-box: fill-box;
+  transform-origin: 50% 80%;
+  animation: flap 0.45s ease-in-out infinite alternate;
+}
+body[data-time='night'] .bird {
+  display: none;
+}
+.owner .head {
+  transform-box: view-box;
+  transform-origin: 60px 92px;
+  animation: glance 7s ease-in-out infinite;
+}
+.land .actor-inner {
+  animation: land 0.35s ease-out !important;
+}
+@keyframes fly {
+  from {
+    transform: translate3d(-120px, 0, 0);
+  }
+  to {
+    transform: translate3d(1400px, -40px, 0);
+  }
+}
+@keyframes flap {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(-0.6);
+  }
+}
+@keyframes glance {
+  0%,
+  70%,
+  100% {
+    transform: rotate(0deg);
+  }
+  78%,
+  86% {
+    transform: rotate(-7deg);
+  }
+  92% {
+    transform: rotate(5deg);
+  }
+}
+@keyframes land {
+  0% {
+    transform: scale(1.12, 0.82);
+  }
+  60% {
+    transform: scale(0.95, 1.06);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+.art-evening > .sky.evening {
+  background: #bd7e92;
+}
+.art-night > .sky.night {
+  background: #021548;
+}

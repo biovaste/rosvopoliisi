@@ -144,6 +144,8 @@ for (let cycle = 0; cycle < 2; cycle++) {
     await drag(t.rosvo, t.jail, { palm: cycle === 1 && r === 0, shot: r === 0 ? `${OUT}/${String(shot++).padStart(2, '0')}-escort.png` : '' });
     s = await waitFor((s) => s.phase === 'returning' && !s.busy, 'returning');
     check(s.jailed === r + 1, `rosvo jailed (${s.jailed}/3)`);
+    const hidden = await page.evaluate(() => getComputedStyle(document.querySelector('.actor.rosvo')).opacity === '0');
+    check(hidden, 'jailed rosvo is no longer visible outside the station');
     await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-jailed.png` });
 
     t = await tg();

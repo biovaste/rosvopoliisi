@@ -358,6 +358,8 @@ async function catchRosvo(from: Pt, onTheRun: boolean): Promise<void> {
   sparkle(scene, { x: from.x, y: from.y - 150 * rosvo.scale });
   const land = onTheRun ? { x: clamp(from.x, 420, 1100), y: clamp(from.y, 640, 790) } : SPOTS[state.spot].land;
   await walkTo(rosvo, land, { hop: 110, speed: 700, ease: ease.inOut });
+  rosvo.el.classList.add('land');
+  window.setTimeout(() => rosvo.el.classList.remove('land'), 400);
   rosvo.flip = false;
   rosvo.render();
   state.rosvoRest = { ...land };
@@ -439,7 +441,6 @@ async function dropRosvo(): Promise<void> {
   // Escorted into the station.
   await escortIn(rosvo);
   rosvo.show(false);
-  rosvo.el.style.opacity = '';
   const n = state.jailed;
   sfx.clang();
   const face = scene.windows[n].face;
@@ -464,7 +465,7 @@ async function dropItem(): Promise<void> {
   const v = view(o);
   v.item.el.classList.remove('dragging');
   v.item.zFix = null;
-  if (dist(v.item, { x: o.pos.x, y: o.pos.y - 100 * depth(o.pos.y) }) > OWNER_RADIUS) {
+  if (dist(v.item, { x: o.pos.x, y: o.pos.y - 100 * depth(o.pos.y) * o.size }) > OWNER_RADIUS) {
     state.busy = true;
     sfx.floatBack();
     await v.item.moveTo(state.itemRest.x, state.itemRest.y, 700, 30, ease.out);

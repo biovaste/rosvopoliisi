@@ -129,6 +129,13 @@ export function buildScene(app: HTMLElement): Scene {
     s.style.transform = `translate3d(${x.toFixed(0)}px,${y.toFixed(0)}px,0)`;
     s.style.animationDelay = `${(i % 7) * 0.4}s`;
   }
+  for (let i = 0; i < 3; i++) {
+    div(
+      `bird b${i}`,
+      sky,
+      `<svg viewBox="0 0 40 20" width="${30 - i * 5}" height="${15 - i * 2}"><path class="wing" d="M2 10 Q10 0 20 10 Q30 0 38 10" fill="none" stroke="#3a2c2a" stroke-width="3" stroke-linecap="round"/></svg>`,
+    );
+  }
   const clouds = div('clouds', sky);
   for (let i = 0; i < 4; i++) {
     div(

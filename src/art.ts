@@ -1,6 +1,6 @@
 // SVG art for items and small props. Everything is drawn in code.
 
-import { OUT, wob } from './draw';
+import { OUT, tone, vgrad, wob } from './draw';
 
 export { OUT };
 
@@ -111,32 +111,45 @@ export function jailWindowBars(): string {
 }
 
 export function carSvg(driverHead: string): string {
+  const body = vgrad('#f4f6fa', 0.4, -0.12);
   const wheel = (cx: number) => `<g class="wheel" style="transform-origin:${cx}px 112px">
-      <circle cx="${cx}" cy="112" r="22" fill="${OUT}"/><circle cx="${cx}" cy="112" r="10" fill="#cfd8dc"/>
-      <path d="M${cx - 9} 112 H${cx + 9} M${cx} 103 V121" stroke="${OUT}" stroke-width="3"/></g>`;
+      <circle cx="${cx}" cy="112" r="22" fill="${OUT}"/><circle cx="${cx}" cy="112" r="17" fill="#3b3d48"/>
+      <circle cx="${cx}" cy="112" r="10" fill="#cfd8dc" stroke="${OUT}" stroke-width="2"/>
+      <path d="M${cx - 9} 112 H${cx + 9} M${cx} 103 V121" stroke="${OUT}" stroke-width="3"/>
+      <path d="M${cx - 14} 102 A17 17 0 0 1 ${cx + 2} 95" stroke="#fff" stroke-width="2.5" fill="none" opacity=".35"/></g>`;
+  const shape = 'M14 96 Q12 66 40 62 L72 30 Q80 22 96 22 L170 22 Q184 22 192 32 L218 62 Q248 66 248 96 L248 110 L14 110Z';
   return `<svg viewBox="0 0 260 140" width="260" height="140">
-    <defs>
+    <defs>${body.def}
       <clipPath id="cw-rear"><path d="M84 36 L124 36 L124 62 L60 62Z"/></clipPath>
       <clipPath id="cw-front"><path d="M134 36 L176 36 L202 62 L134 62Z"/></clipPath>
+      <clipPath id="car-body"><path d="${shape}"/></clipPath>
     </defs>
-    <ellipse cx="131" cy="132" rx="120" ry="9" fill="#000" opacity=".15"/>
-    <path d="M14 96 Q12 66 40 62 L72 30 Q80 22 96 22 L170 22 Q184 22 192 32 L218 62 Q248 66 248 96 L248 110 L14 110Z" fill="#ffffff"/>
-    <rect x="14" y="76" width="234" height="20" fill="#2f5aa8"/>
-    <path d="M14 96 Q12 66 40 62 L72 30 Q80 22 96 22 L170 22 Q184 22 192 32 L218 62 Q248 66 248 96 L248 110 L14 110Z" fill="none" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M84 36 L124 36 L124 62 L60 62Z" fill="#bfe7ff"/>
-    <path d="M134 36 L176 36 L202 62 L134 62Z" fill="#bfe7ff"/>
+    <ellipse cx="131" cy="132" rx="122" ry="9" fill="#000" opacity=".18"/>
+    <path d="${shape}" fill="${body.fill}"/>
+    <g clip-path="url(#car-body)">
+      <rect x="10" y="76" width="244" height="20" fill="#2f5aa8"/><rect x="10" y="76" width="244" height="5" fill="#5d86d4"/>
+      <rect x="10" y="98" width="244" height="14" fill="#000" opacity=".12"/>
+      <path d="M44 66 Q120 58 214 66" stroke="#fff" stroke-width="4" fill="none" opacity=".8"/>
+    </g>
+    <path d="${shape}" fill="none" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M84 36 L124 36 L124 62 L60 62Z" fill="#a9d8f2"/>
+    <path d="M134 36 L176 36 L202 62 L134 62Z" fill="#a9d8f2"/>
     <g clip-path="url(#cw-rear)"><g class="riders"></g></g>
     <g clip-path="url(#cw-front)"><g class="driver" transform="translate(140 24) scale(.46)">${driverHead}</g></g>
     <path d="M84 36 L124 36 L124 62 L60 62Z" fill="none" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
     <path d="M134 36 L176 36 L202 62 L134 62Z" fill="none" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
     <path d="M92 40 L100 40 L84 58 L76 58Z M144 40 L152 40 L140 58 L136 58Z" fill="#fff" opacity=".5"/>
-    <g transform="translate(118 86)"><path d="M0 -10 L3 -3 L10 -3 L4 2 L6 9 L0 5 L-6 9 L-4 2 L-10 -3 L-3 -3Z" fill="#ffd54f" stroke="${OUT}" stroke-width="2"/></g>
+    <path d="M128 64 V108" stroke="${OUT}" stroke-width="2.5" opacity=".5"/><rect x="134" y="70" width="12" height="4" rx="2" fill="${OUT}" opacity=".6"/>
+    <g transform="translate(104 88)"><path d="M0 -10 L3 -3 L10 -3 L4 2 L6 9 L0 5 L-6 9 L-4 2 L-10 -3 L-3 -3Z" fill="#ffd54f" stroke="${OUT}" stroke-width="2"/></g>
+    <rect x="236" y="98" width="18" height="8" rx="3" fill="#b0bec5" stroke="${OUT}" stroke-width="2.5"/>
+    <rect x="8" y="98" width="16" height="8" rx="3" fill="#b0bec5" stroke="${OUT}" stroke-width="2.5"/>
     ${wheel(66)}${wheel(196)}
     <rect x="236" y="70" width="14" height="10" rx="3" fill="#fff59d" stroke="${OUT}" stroke-width="3"/>
     <rect x="10" y="72" width="10" height="10" rx="3" fill="#ef5350" stroke="${OUT}" stroke-width="3"/>
     <rect x="104" y="8" width="54" height="16" rx="6" fill="#455a64" stroke="${OUT}" stroke-width="4"/>
   </svg>`;
 }
+
 
 export function carLights(): string {
   return `<svg viewBox="0 0 54 16" width="54" height="16">
@@ -145,14 +158,37 @@ export function carLights(): string {
   </svg>`;
 }
 
+const leafMarks = (pts: number[][], c: string) =>
+  pts.map(([x, y]) => `<path d="M${x} ${y} q5 6 10 0" stroke="${c}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`).join('');
+
+
+/** Market stall back (posts and awning), 190 x 200. The counter is a separate hiding object. */
+
 export function bushSvg(c = '#4caf50'): string {
+  const g = vgrad(c, 0.22, -0.22);
+  const blobs = [
+    [40, 82, 34],
+    [76, 56, 38],
+    [118, 50, 40],
+    [156, 70, 34],
+    [100, 86, 40],
+    [170, 92, 26],
+    [26, 98, 22],
+  ];
+  const outline = blobs.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r + 3.5}" fill="${OUT}"/>`).join('');
+  const fill = blobs.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${g.fill}"/>`).join('');
   return `<svg viewBox="0 0 200 120" width="200" height="120">
-    <path d="M10 116 Q0 70 36 66 Q40 26 80 34 Q100 6 128 30 Q170 22 170 62 Q204 70 190 116Z" fill="${c}" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M150 64 Q192 76 186 114 L118 114 Q162 100 150 64Z" fill="#000" opacity=".1"/>
-    <path d="M44 72 Q50 50 72 48 M92 36 Q106 24 122 32" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" opacity=".3"/>
-    <circle cx="60" cy="72" r="5" fill="#e53935"/><circle cx="130" cy="58" r="5" fill="#e53935"/><circle cx="104" cy="92" r="5" fill="#e53935"/>
+    <defs>${g.def}</defs>
+    <ellipse cx="100" cy="116" rx="96" ry="7" fill="#1b3a10" opacity=".22"/>
+    <path d="M8 118 L192 118 L186 100 L14 100Z" fill="${OUT}"/>
+    ${outline}<rect x="12" y="96" width="176" height="20" fill="${tone(c, -0.25)}"/>${fill}
+    <path d="M128 60 Q176 66 170 110 L120 112 Q150 96 128 60Z" fill="#000" opacity=".1"/>
+    <circle cx="70" cy="44" r="14" fill="#fff" opacity=".2"/><circle cx="112" cy="34" r="10" fill="#fff" opacity=".2"/>
+    ${leafMarks([[50, 74], [96, 70], [140, 82], [70, 96], [120, 100], [160, 64]], tone(c, -0.35))}
+    ${[[56, 64], [126, 54], [104, 92], [150, 88]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5.5" fill="#e53935" stroke="${OUT}" stroke-width="1.5"/><circle cx="${x - 1.5}" cy="${y - 1.5}" r="1.6" fill="#fff"/>`).join('')}
   </svg>`;
 }
+
 
 export function binSvg(): string {
   return `<svg viewBox="0 0 130 150" width="130" height="150">
@@ -164,11 +200,11 @@ export function binSvg(): string {
 }
 
 
+
 export function barrelSvg(): string {
   return `<svg viewBox="0 0 120 140" width="120" height="140">
     <path d="M18 20 Q8 76 18 134 L102 134 Q112 76 102 20Z" fill="#a1694a" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
     <path d="M14 44 H106 M12 104 H108" stroke="#546e7a" stroke-width="8"/>
-    <path d="M40 22 Q34 76 40 132 M80 22 Q86 76 80 132" stroke="${OUT}" stroke-width="2.5" fill="none" opacity=".35"/>
     <ellipse cx="60" cy="20" rx="42" ry="9" fill="#bf8a63" stroke="${OUT}" stroke-width="5"/>
   </svg>`;
 }
@@ -176,25 +212,45 @@ export function barrelSvg(): string {
 
 
 
+
 export function crateSvg(): string {
-  const box = (x: number, y: number, w: number, h: number) => `<g>
-    <path d="${wob([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], 1)}" fill="#d9a066" stroke="${OUT}" stroke-width="3.5"/>
-    <path d="M${x + 6} ${y + 6} L${x + w - 6} ${y + h - 6} M${x + 4} ${y + h / 2} H${x + w - 4}" stroke="#a8713c" stroke-width="5" stroke-linecap="round"/>
-    <path d="${wob([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], 1)}" fill="none" stroke="${OUT}" stroke-width="3.5"/></g>`;
+  const wood = vgrad('#d9a066', 0.2, -0.2);
+  const box = (x: number, y: number, w: number, h: number) => {
+    const p = wob([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], 1);
+    return `<g>
+    <path d="${p}" fill="${wood.fill}" stroke="${OUT}" stroke-width="3.5"/>
+    <path d="M${x + 3} ${y + h / 3} H${x + w - 3} M${x + 3} ${(y + (2 * h) / 3).toFixed(1)} H${x + w - 3}" stroke="#9c6a36" stroke-width="2.5"/>
+    <path d="M${x + 12} ${y + 10} q10 4 22 0 M${x + w - 34} ${y + h / 3 + 10} q10 4 20 0 M${x + 16} ${(y + (2 * h) / 3 + 10).toFixed(1)} q10 -4 20 0" stroke="#b07a40" stroke-width="2" fill="none"/>
+    <path d="M${x + 8} ${y + 6} L${x + w - 8} ${y + h - 6}" stroke="#8a5a2b" stroke-width="7" stroke-linecap="round"/>
+    <path d="M${x + 8} ${y + 6} L${x + w - 8} ${y + h - 6}" stroke="#c48a50" stroke-width="3" stroke-linecap="round"/>
+    ${[[x + 6, y + 6], [x + w - 6, y + 6], [x + 6, y + h - 6], [x + w - 6, y + h - 6]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="2.2" fill="${OUT}"/>`).join('')}
+    <path d="M${x + 3} ${y + 3} H${x + w - 3}" stroke="#fff" stroke-width="2.5" opacity=".35"/>
+    <path d="${p}" fill="none" stroke="${OUT}" stroke-width="3.5"/></g>`;
+  };
   return `<svg viewBox="0 0 160 140" width="160" height="140">
-    <ellipse cx="80" cy="136" rx="78" ry="6" fill="#000" opacity=".15"/>
+    <defs>${wood.def}</defs>
+    <ellipse cx="80" cy="136" rx="80" ry="7" fill="#000" opacity=".18"/>
     ${box(40, 4, 74, 62)}${box(2, 66, 78, 70)}${box(80, 66, 76, 70)}
+    <path d="M42 64 H112" stroke="#000" stroke-width="4" opacity=".12"/>
   </svg>`;
 }
 
+
 export function lampSvg(): string {
   return `<svg viewBox="0 0 60 260" width="60" height="260">
-    <circle class="glow" cx="30" cy="30" r="30" fill="#fff59d" opacity=".55"/>
-    <rect x="25" y="40" width="10" height="216" rx="4" fill="#546e7a" stroke="${OUT}" stroke-width="3"/>
-    <path d="M14 40 L46 40 L40 16 L20 16Z" fill="#455a64" stroke="${OUT}" stroke-width="3"/>
-    <circle cx="30" cy="30" r="9" fill="#fff9c4" stroke="${OUT}" stroke-width="3"/>
+    <circle class="glow" cx="30" cy="34" r="34" fill="#fff59d" opacity=".55"/>
+    <path d="M18 256 h24 l-4 -12 h-16Z" fill="#2e4a3e" stroke="${OUT}" stroke-width="2.5"/>
+    <rect x="25" y="52" width="10" height="194" rx="4" fill="#3e5f50" stroke="${OUT}" stroke-width="3"/>
+    <rect x="27" y="56" width="3" height="186" fill="#fff" opacity=".25"/>
+    <path d="M22 120 h16 M23 200 h14" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M30 54 q-14 -2 -14 -12" stroke="${OUT}" stroke-width="3" fill="none"/><path d="M30 54 q14 -2 14 -12" stroke="${OUT}" stroke-width="3" fill="none"/>
+    <path d="M16 46 L44 46 L40 22 L20 22Z" fill="#fff4b8" stroke="${OUT}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M30 22 V46" stroke="${OUT}" stroke-width="2"/>
+    <path d="M14 22 L46 22 L30 8Z" fill="#3e5f50" stroke="${OUT}" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="30" cy="6" r="3" fill="${OUT}"/>
   </svg>`;
 }
+
 
 export function handSvg(): string {
   return `<svg viewBox="0 0 100 120" width="100" height="120">
@@ -243,92 +299,146 @@ export function rotateSvg(): string {
 }
 
 export function slideSvg(): string {
+  const slide = vgrad('#ba68c8', 0.25, -0.2);
+  const post = vgrad('#42a5f5', 0.25, -0.2);
   return `<svg viewBox="0 0 220 170" width="220" height="170">
-    <ellipse cx="110" cy="166" rx="104" ry="6" fill="#000" opacity=".15"/>
-    <path d="M30 168 V40 M70 168 V40" stroke="${OUT}" stroke-width="11" stroke-linecap="round"/>
-    <path d="M30 168 V40 M70 168 V40" stroke="#42a5f5" stroke-width="6" stroke-linecap="round"/>
-    ${[70, 100, 130, 156].map((y) => `<path d="M30 ${y} H70" stroke="${OUT}" stroke-width="6"/><path d="M30 ${y} H70" stroke="#ffd54f" stroke-width="3"/>`).join('')}
-    <path d="${wob([[22, 34], [80, 34], [80, 48], [22, 48]], 1)}" fill="#ef5350" stroke="${OUT}" stroke-width="3.5"/>
-    <path d="M78 40 Q120 46 150 110 Q164 150 214 156 L212 170 Q150 168 134 120 Q112 64 78 56Z" fill="#ba68c8" stroke="${OUT}" stroke-width="3.5" stroke-linejoin="round"/>
-    <path d="M90 50 Q122 62 142 112" stroke="#fff" stroke-width="4" fill="none" opacity=".45" stroke-linecap="round"/>
+    <defs>${slide.def}${post.def}</defs>
+    <ellipse cx="116" cy="166" rx="104" ry="7" fill="#000" opacity=".16"/>
+    <path d="M30 168 V40 M70 168 V40" stroke="${OUT}" stroke-width="12" stroke-linecap="round"/>
+    <path d="M30 168 V40 M70 168 V40" stroke="${post.fill}" stroke-width="7" stroke-linecap="round"/>
+    <path d="M28 168 V44 M68 168 V44" stroke="#fff" stroke-width="2" opacity=".45"/>
+    ${[72, 100, 128, 156].map((y) => `<path d="M30 ${y} H70" stroke="${OUT}" stroke-width="7"/><path d="M30 ${y} H70" stroke="#ffd54f" stroke-width="3.5"/>`).join('')}
+    <path d="${wob([[20, 32], [82, 32], [82, 48], [20, 48]], 1)}" fill="#ef5350" stroke="${OUT}" stroke-width="3.5"/>
+    <path d="M24 36 H78" stroke="#fff" stroke-width="2.5" opacity=".4"/>
+    <path d="M28 32 V8 M74 32 V8" stroke="${OUT}" stroke-width="4"/><path d="M24 10 Q51 -4 78 10" stroke="#ef5350" stroke-width="7" fill="none"/>
+    <path d="M24 10 Q51 -4 78 10" stroke="${OUT}" stroke-width="2" fill="none" opacity=".5"/>
+    <path d="M78 40 Q120 46 150 110 Q164 150 214 156 L212 170 Q150 168 134 120 Q112 64 78 56Z" fill="${slide.fill}" stroke="${OUT}" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M84 50 Q118 58 140 112 Q152 146 200 156" stroke="#fff" stroke-width="4" fill="none" opacity=".45" stroke-linecap="round"/>
+    <path d="M80 56 Q112 70 132 120 Q148 162 212 168" stroke="#000" stroke-width="5" fill="none" opacity=".12"/>
   </svg>`;
 }
+
 
 export function tunnelSvg(): string {
+  const body = vgrad('#4fc3f7', 0.3, -0.2);
   return `<svg viewBox="0 0 170 96" width="170" height="96">
-    <ellipse cx="85" cy="92" rx="82" ry="6" fill="#000" opacity=".15"/>
-    <path d="M20 92 Q14 22 74 16 L140 16 Q156 54 140 92Z" fill="#4fc3f7" stroke="${OUT}" stroke-width="3.5"/>
-    <path d="M52 20 Q46 56 52 92 M84 16 Q78 54 84 92 M114 16 Q108 54 114 92" stroke="#ffd54f" stroke-width="8"/>
-    <path d="M52 20 Q46 56 52 92 M84 16 Q78 54 84 92 M114 16 Q108 54 114 92" stroke="${OUT}" stroke-width="2" opacity=".3"/>
+    <defs>${body.def}</defs>
+    <ellipse cx="85" cy="92" rx="84" ry="7" fill="#000" opacity=".16"/>
+    <path d="M20 92 Q14 22 74 16 L140 16 Q156 54 140 92Z" fill="${body.fill}" stroke="${OUT}" stroke-width="3.5"/>
+    <path d="M52 20 Q46 56 52 92 M84 16 Q78 54 84 92 M114 16 Q108 54 114 92" stroke="${OUT}" stroke-width="11"/>
+    <path d="M52 20 Q46 56 52 92 M84 16 Q78 54 84 92 M114 16 Q108 54 114 92" stroke="#ffd54f" stroke-width="7"/>
+    <path d="M36 34 Q60 22 130 22" stroke="#fff" stroke-width="5" fill="none" opacity=".45" stroke-linecap="round"/>
+    <path d="M24 84 H140" stroke="#000" stroke-width="8" opacity=".12"/>
     <ellipse cx="140" cy="54" rx="22" ry="38" fill="#ffd54f" stroke="${OUT}" stroke-width="3.5"/>
-    <ellipse cx="142" cy="56" rx="13" ry="28" fill="#3a2c2a" opacity=".75"/>
+    <ellipse cx="142" cy="56" rx="13" ry="28" fill="#2b2140"/>
+    <ellipse cx="146" cy="60" rx="7" ry="18" fill="#000" opacity=".35"/>
   </svg>`;
 }
+
 
 export function planterSvg(): string {
-  const blooms = [16, 38, 60, 82, 104]
-    .map((x, i) => `<circle cx="${x}" cy="${14 + (i % 2) * 6}" r="8" fill="${['#f06292', '#ffd54f', '#ba68c8', '#ff8a65', '#fff'][i]}" stroke="${OUT}" stroke-width="2"/>`)
+  const pot = vgrad('#c0694f', 0.18, -0.22);
+  const leaves = [10, 30, 52, 74, 96, 112]
+    .map((x, i) => `<path d="M${x} 30 q${i % 2 ? 8 : -8} -14 ${i % 2 ? 2 : -2} -24 q${i % 2 ? -10 : 10} 10 ${i % 2 ? -2 : 2} 24Z" fill="#5aa04a" stroke="${OUT}" stroke-width="1.5"/>`)
     .join('');
+  const flower = (x: number, y: number, c: string) =>
+    `<g transform="translate(${x} ${y})">${[0, 72, 144, 216, 288].map((a) => `<ellipse cx="0" cy="-6" rx="4" ry="6" fill="${c}" stroke="${OUT}" stroke-width="1.3" transform="rotate(${a})"/>`).join('')}<circle r="3.4" fill="#ffd54f" stroke="${OUT}" stroke-width="1.2"/></g>`;
   return `<svg viewBox="0 0 120 76" width="120" height="76">
-    <path d="M8 30 Q60 4 112 30" fill="#66bb6a" stroke="${OUT}" stroke-width="2.5"/>${blooms}
-    <path d="${wob([[2, 28], [118, 28], [108, 74], [12, 74]], 1.2)}" fill="#b0614f" stroke="${OUT}" stroke-width="3.5"/>
-    <path d="M10 40 H110" stroke="${OUT}" stroke-width="2" opacity=".3"/>
+    <defs>${pot.def}</defs>
+    <ellipse cx="60" cy="74" rx="56" ry="4" fill="#000" opacity=".18"/>
+    ${leaves}
+    ${flower(18, 16, '#f06292')}${flower(40, 10, '#fff')}${flower(62, 16, '#ba68c8')}${flower(84, 10, '#ffd54f')}${flower(104, 18, '#ff8a65')}
+    <path d="${wob([[2, 28], [118, 28], [108, 74], [12, 74]], 1.2)}" fill="${pot.fill}" stroke="${OUT}" stroke-width="3.5"/>
+    <path d="${wob([[0, 26], [120, 26], [120, 38], [0, 38]], 0.8)}" fill="#d98a6c" stroke="${OUT}" stroke-width="3"/>
+    <path d="M6 30 H114" stroke="#fff" stroke-width="2.5" opacity=".35"/>
+    <path d="M30 48 q8 6 16 0 M70 56 q8 6 16 0" stroke="${OUT}" stroke-width="2" fill="none" opacity=".25"/>
   </svg>`;
 }
 
+
 export function sacksSvg(): string {
-  const sack = (x: number, y: number, s: number, c: string) => `<g transform="translate(${x} ${y}) scale(${s})">
-    <path d="M6 20 Q0 58 34 60 Q68 58 62 20 Q50 10 34 14 Q18 10 6 20Z" fill="${c}" stroke="${OUT}" stroke-width="3.5"/>
-    <path d="M20 14 L34 2 L48 14" fill="${c}" stroke="${OUT}" stroke-width="3.5" stroke-linejoin="round"/>
-    <path d="M22 36 h24" stroke="${OUT}" stroke-width="2" opacity=".3"/></g>`;
+  const sack = (x: number, y: number, s: number, c: string) => {
+    const g = vgrad(c, 0.18, -0.25);
+    return `<g transform="translate(${x} ${y}) scale(${s})"><defs>${g.def}</defs>
+    <path d="M6 20 Q0 58 34 60 Q68 58 62 20 Q50 10 34 14 Q18 10 6 20Z" fill="${g.fill}" stroke="${OUT}" stroke-width="3.5"/>
+    <path d="M12 30 l6 6 M22 40 l6 6 M40 28 l6 6 M48 42 l6 6 M14 48 l6 6" stroke="${OUT}" stroke-width="1.6" opacity=".25"/>
+    <path d="M20 14 L34 2 L48 14" fill="${tone(c, 0.1)}" stroke="${OUT}" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M22 15 Q34 20 46 15" stroke="#8d6e63" stroke-width="4" fill="none"/>
+    <path d="M12 24 Q20 18 28 20" stroke="#fff" stroke-width="3" fill="none" opacity=".35"/></g>`;
+  };
   return `<svg viewBox="0 0 130 84" width="130" height="84">
-    <ellipse cx="65" cy="80" rx="62" ry="5" fill="#000" opacity=".15"/>
+    <ellipse cx="65" cy="80" rx="64" ry="6" fill="#000" opacity=".18"/>
     ${sack(4, 22, 0.95, '#d8b878')}${sack(62, 18, 1, '#c9a36a')}${sack(32, 8, 0.85, '#e0c48c')}
   </svg>`;
 }
 
+
 export function mailboxSvg(): string {
+  const box = vgrad('#1e88e5', 0.25, -0.2);
   return `<svg viewBox="0 0 60 90" width="60" height="90">
-    <rect x="26" y="40" width="8" height="50" fill="#6d4c41" stroke="${OUT}" stroke-width="2.5"/>
-    <path d="M4 44 V18 Q4 4 30 4 Q56 4 56 18 V44Z" fill="#1e88e5" stroke="${OUT}" stroke-width="3.5"/>
-    <path d="M14 22 H46" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/>
+    <defs>${box.def}</defs>
+    <rect x="26" y="40" width="8" height="50" fill="#8d6040" stroke="${OUT}" stroke-width="2.5"/>
+    <path d="M4 44 V18 Q4 4 30 4 Q56 4 56 18 V44Z" fill="${box.fill}" stroke="${OUT}" stroke-width="3.5"/>
+    <path d="M10 18 Q12 9 26 8" stroke="#fff" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>
+    <path d="M14 24 H46" stroke="${OUT}" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M4 38 H56" stroke="#000" stroke-width="5" opacity=".15"/>
     <path d="M56 14 V-6 L72 -2 L56 2" fill="#e53935" stroke="${OUT}" stroke-width="2.5"/>
   </svg>`;
 }
 
-/** Market stall back (posts and awning), 190 x 200. The counter is a separate hiding object. */
+
 export function stallBackSvg(): string {
-  const stripes = Array.from({ length: 8 }, (_, i) => `<path d="M${6 + i * 22.5} 28 h22.5 v26 q-11 12 -22.5 0Z" fill="${i % 2 ? '#fff' : '#e53935'}" stroke="${OUT}" stroke-width="2.5" stroke-linejoin="round"/>`).join('');
+  const stripes = Array.from({ length: 8 }, (_, i) => `<path d="M${6 + i * 22.5} 28 h22.5 v26 q-11 12 -22.5 0Z" fill="${i % 2 ? '#fff6ec' : '#e53935'}" stroke="${OUT}" stroke-width="2.5" stroke-linejoin="round"/>`).join('');
   return `<svg viewBox="0 0 190 200" width="190" height="200">
-    <path d="M14 50 V196 M176 50 V196" stroke="${OUT}" stroke-width="10"/><path d="M14 50 V196 M176 50 V196" stroke="#a1694a" stroke-width="5"/>
+    <path d="M14 50 V196 M176 50 V196" stroke="${OUT}" stroke-width="11"/><path d="M14 50 V196 M176 50 V196" stroke="#a1694a" stroke-width="6"/>
+    <path d="M12 52 V196 M174 52 V196" stroke="#fff" stroke-width="1.5" opacity=".35"/>
     <path d="${wob([[0, 30], [95, 2], [190, 30]], 1)}" fill="#e53935" stroke="${OUT}" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M20 24 L95 6" stroke="#fff" stroke-width="3" opacity=".4" stroke-linecap="round"/>
     ${stripes}
+    <path d="M6 52 Q95 64 184 52" stroke="#000" stroke-width="6" fill="none" opacity=".1"/>
   </svg>`;
 }
+
 
 export function stallCounterSvg(): string {
+  const wood = vgrad('#c8874f', 0.15, -0.22);
+  const fruit = (x: number, y: number, c: string) =>
+    `<circle cx="${x}" cy="${y}" r="9" fill="${c}" stroke="${OUT}" stroke-width="2.2"/><circle cx="${x - 3}" cy="${y - 3}" r="2.5" fill="#fff" opacity=".6"/><path d="M${x} ${y - 9} l2 -4" stroke="#5d4037" stroke-width="2"/>`;
   return `<svg viewBox="0 0 190 96" width="190" height="96">
-    <ellipse cx="95" cy="92" rx="94" ry="5" fill="#000" opacity=".15"/>
-    <path d="${wob([[6, 18], [184, 18], [184, 92], [6, 92]], 1.4)}" fill="#c8874f" stroke="${OUT}" stroke-width="3.5"/>
+    <defs>${wood.def}</defs>
+    <ellipse cx="95" cy="92" rx="94" ry="5" fill="#000" opacity=".18"/>
+    <path d="${wob([[6, 18], [184, 18], [184, 92], [6, 92]], 1.4)}" fill="${wood.fill}" stroke="${OUT}" stroke-width="3.5"/>
     <path d="M6 44 H184 M6 68 H184" stroke="#9c6235" stroke-width="3"/>
+    <path d="M24 32 q14 4 28 0 M110 56 q14 -4 30 0 M60 80 q12 4 24 0" stroke="#a96d3c" stroke-width="2" fill="none"/>
     <path d="${wob([[0, 8], [190, 8], [190, 22], [0, 22]], 1)}" fill="#e0a66a" stroke="${OUT}" stroke-width="3.5"/>
-    <circle cx="40" cy="2" r="9" fill="#ff7043" stroke="${OUT}" stroke-width="2.5"/><circle cx="58" cy="4" r="9" fill="#ffca28" stroke="${OUT}" stroke-width="2.5"/>
-    <circle cx="140" cy="2" r="9" fill="#9ccc65" stroke="${OUT}" stroke-width="2.5"/><circle cx="158" cy="4" r="9" fill="#ef5350" stroke="${OUT}" stroke-width="2.5"/>
+    <path d="M4 11 H186" stroke="#fff" stroke-width="2.5" opacity=".4"/>
+    ${fruit(30, 2, '#ff7043')}${fruit(48, 4, '#ffca28')}${fruit(39, -8, '#ff8a65')}
+    ${fruit(140, 2, '#9ccc65')}${fruit(158, 4, '#ef5350')}${fruit(149, -8, '#ef5350')}
   </svg>`;
 }
 
+
 export function benchSvg(): string {
+  const wood = vgrad('#bf8457', 0.2, -0.2);
   return `<svg viewBox="0 0 140 70" width="140" height="70">
-    <path d="M14 66 V30 M126 66 V30" stroke="${OUT}" stroke-width="7"/>
-    <path d="${wob([[4, 10], [136, 10], [136, 22], [4, 22]], 0.8)}" fill="#a1694a" stroke="${OUT}" stroke-width="3"/>
-    <path d="${wob([[0, 36], [140, 36], [140, 48], [0, 48]], 0.8)}" fill="#bf8457" stroke="${OUT}" stroke-width="3"/>
+    <defs>${wood.def}</defs>
+    <ellipse cx="70" cy="68" rx="66" ry="4" fill="#000" opacity=".18"/>
+    <path d="M14 66 V30 M126 66 V30" stroke="${OUT}" stroke-width="8" stroke-linecap="round"/>
+    <path d="M14 66 q-8 0 -8 -8 M126 66 q8 0 8 -8" stroke="${OUT}" stroke-width="4" fill="none"/>
+    <path d="${wob([[4, 10], [136, 10], [136, 22], [4, 22]], 0.8)}" fill="${wood.fill}" stroke="${OUT}" stroke-width="3"/>
+    <path d="${wob([[0, 36], [140, 36], [140, 48], [0, 48]], 0.8)}" fill="${wood.fill}" stroke="${OUT}" stroke-width="3"/>
+    <path d="M8 13 H132 M4 39 H136" stroke="#fff" stroke-width="2" opacity=".4"/>
   </svg>`;
 }
+
 
 export function fenceSvg(w: number): string {
   const n = Math.floor(w / 24);
-  const posts = Array.from({ length: n }, (_, i) => `<path d="M${4 + i * 24} 42 V10 l7 -7 l7 7 V42Z" fill="#fff8ec" stroke="${OUT}" stroke-width="2.5" stroke-linejoin="round"/>`).join('');
-  return `<svg viewBox="0 0 ${w} 46" width="${w}" height="46"><path d="M0 18 H${w} M0 32 H${w}" stroke="${OUT}" stroke-width="7"/><path d="M0 18 H${w} M0 32 H${w}" stroke="#fff8ec" stroke-width="3.5"/>${posts}</svg>`;
+  const posts = Array.from(
+    { length: n },
+    (_, i) => `<path d="M${4 + i * 24} 42 V10 l7 -7 l7 7 V42Z" fill="#fff8ec" stroke="${OUT}" stroke-width="2.5" stroke-linejoin="round"/><path d="M${14 + i * 24} 12 V40" stroke="#c9b9a0" stroke-width="3"/>`,
+  ).join('');
+  return `<svg viewBox="0 0 ${w} 46" width="${w}" height="46"><ellipse cx="${w / 2}" cy="44" rx="${w / 2}" ry="3" fill="#000" opacity=".15"/><path d="M0 18 H${w} M0 32 H${w}" stroke="${OUT}" stroke-width="7"/><path d="M0 18 H${w} M0 32 H${w}" stroke="#efe3d0" stroke-width="3.5"/>${posts}</svg>`;
 }
 
 /** Handcuffs, 40 x 20, drawn at the rosvo's wrists. */

@@ -3,6 +3,7 @@
 // everyone, so no look is tied to being a rosvo, a townsperson or the police.
 
 import { OUT, cuffsSvg, type ItemKind } from './art';
+import { tone } from './draw';
 import type { BuildingKind } from './buildings';
 
 export const SKINS = ['#fde3cf', '#f2c4a0', '#dba67c', '#b87a4e', '#8c5636', '#5f3b26'];
@@ -19,6 +20,8 @@ export interface Look {
   hairColor: string;
   female: boolean;
   mustache: boolean;
+  /** Body width tweak (-4 slim .. +8 round). */
+  build: number;
 }
 
 export const pick = <T,>(a: readonly T[]): T => a[Math.floor(Math.random() * a.length)];
@@ -39,6 +42,7 @@ export function randomLook(skin = pick(SKINS), female = Math.random() < 0.5): Lo
     hair: pick(female ? FEMALE_HAIR : MALE_HAIR),
     hairColor: pick(HAIR_COLORS.slice(0, 5)),
     mustache: !female && Math.random() < 0.35,
+    build: Math.round(Math.random() * 12 - 4),
   };
 }
 
@@ -117,7 +121,10 @@ function headBase(l: Look, faceInner: string, hatSvg = ''): string {
   return `${hairBack(l)}
     <circle cx="28" cy="60" r="7" fill="${l.skin}" stroke="${OUT}" stroke-width="4"/>
     <circle cx="92" cy="60" r="7" fill="${l.skin}" stroke="${OUT}" stroke-width="4"/>
+    <rect x="52" y="80" width="16" height="16" rx="5" fill="${l.skin}" stroke="${OUT}" stroke-width="3"/>
     <ellipse cx="60" cy="58" rx="32" ry="30" fill="${l.skin}" stroke="${OUT}" stroke-width="4"/>
+    <path d="M86 52 Q90 76 70 86 Q84 70 86 52Z" fill="#000" opacity=".08"/>
+    <ellipse cx="44" cy="44" rx="9" ry="6" fill="#fff" opacity=".22" transform="rotate(-25 44 44)"/>
     ${hairFront(l)}
     ${faceInner}
     ${hatSvg}`;
@@ -222,6 +229,8 @@ export function rosvoSvg(c: Costume): string {
     <rect x="28" y="96" width="64" height="70" rx="16" fill="#fff" stroke="${OUT}" stroke-width="4"/>
     <clipPath id="${id}"><rect x="30" y="98" width="60" height="66" rx="14"/></clipPath>
     <g clip-path="url(#${id})">${stripes}</g>
+    <path d="M70 100 Q92 112 88 160 L70 162 Q84 128 70 100Z" fill="#000" opacity=".12"/>
+    <path d="M34 108 Q38 100 48 99" stroke="#fff" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>
     <path d="M30 140 Q60 150 90 140" fill="none" stroke="${OUT}" stroke-width="3" opacity=".25"/>
     <g class="arms-cuffed">
       <rect x="22" y="104" width="13" height="36" rx="6.5" fill="#fff" stroke="${OUT}" stroke-width="3" transform="rotate(-38 28 106)"/>
@@ -371,21 +380,27 @@ export function ownerSvg(role: Role, look: Look): string {
   const o = outfit(role);
   const l: Look = o.hairColor ? { ...look, hairColor: o.hairColor } : look;
   const skin = l.skin;
+  const k = l.build;
+  const shirtD = tone(o.shirt, -0.22);
   return `<svg viewBox="0 0 120 200" width="120" height="200">
-    <ellipse class="shadow" cx="60" cy="194" rx="42" ry="8" fill="#000" opacity=".15"/>
+    <ellipse class="shadow" cx="60" cy="194" rx="${42 + k}" ry="8" fill="#000" opacity=".18"/>
     <rect class="leg l" x="40" y="150" width="15" height="40" rx="6" fill="${o.legs}" stroke="${OUT}" stroke-width="3"/>
     <rect class="leg r" x="65" y="150" width="15" height="40" rx="6" fill="${o.legs}" stroke="${OUT}" stroke-width="3"/>
+    <path d="M58 152 V188" stroke="#000" stroke-width="5" opacity=".08"/>
     <ellipse cx="46" cy="192" rx="12" ry="6" fill="${OUT}"/><ellipse cx="74" cy="192" rx="12" ry="6" fill="${OUT}"/>
+    <path d="M38 190 q6 -3 12 0 M68 190 q6 -3 12 0" stroke="#fff" stroke-width="2" opacity=".35" fill="none"/>
     <g class="arms">
-      <rect x="16" y="98" width="14" height="44" rx="7" fill="${o.shirt}" stroke="${OUT}" stroke-width="3" transform="rotate(-20 23 100)"/>
-      <rect x="90" y="98" width="14" height="44" rx="7" fill="${o.shirt}" stroke="${OUT}" stroke-width="3" transform="rotate(20 97 100)"/>
-      <circle cx="38" cy="140" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
-      <circle cx="82" cy="140" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
+      <rect x="${16 - k}" y="98" width="14" height="44" rx="7" fill="${o.shirt}" stroke="${OUT}" stroke-width="3" transform="rotate(-20 ${23 - k} 100)"/>
+      <rect x="${90 + k}" y="98" width="14" height="44" rx="7" fill="${shirtD}" stroke="${OUT}" stroke-width="3" transform="rotate(20 ${97 + k} 100)"/>
+      <circle cx="${38 - k}" cy="140" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
+      <circle cx="${82 + k}" cy="140" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
     </g>
-    <rect x="28" y="92" width="64" height="66" rx="18" fill="${o.shirt}" stroke="${OUT}" stroke-width="4"/>
-    <path d="M30 140 Q60 150 90 140" fill="none" stroke="${OUT}" stroke-width="3" opacity=".2"/>
+    <rect x="${28 - k}" y="92" width="${64 + 2 * k}" height="66" rx="${18 + k / 2}" fill="${o.shirt}" stroke="${OUT}" stroke-width="4"/>
+    <path d="M${70 + k} 96 Q${92 + k} 110 ${88 + k} 154 L${70 + k} 156 Q${84 + k} 124 ${70 + k} 96Z" fill="#000" opacity=".12"/>
+    <path d="M${34 - k} 104 Q${38 - k} 96 ${48 - k / 2} 95" stroke="#fff" stroke-width="3" fill="none" opacity=".35" stroke-linecap="round"/>
+    <path d="M50 93 L60 104 L70 93" fill="none" stroke="${OUT}" stroke-width="2.5" opacity=".45"/>
     ${o.extra && role !== 'elder' ? o.extra : ''}
-    <g transform="translate(0 2)">${headBase(l, faces(60, 60), (role === 'elder' ? o.extra : '') + (o.hat ?? ''))}</g>
+    <g class="head" style="animation-delay:-${(Math.random() * 6).toFixed(1)}s" transform="translate(0 2)">${headBase(l, faces(60, 60), (role === 'elder' ? o.extra : '') + (o.hat ?? ''))}</g>
   </svg>`;
 }
 
@@ -435,6 +450,8 @@ export function officerSvg(l: Look): string {
     <g class="arm-escort"><rect x="90" y="100" width="14" height="44" rx="7" fill="#3d6fc4" stroke="${OUT}" stroke-width="3" transform="rotate(-62 97 104)"/>
       <circle cx="136" cy="120" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/></g>
     <rect x="28" y="92" width="64" height="66" rx="18" fill="#3d6fc4" stroke="${OUT}" stroke-width="4"/>
+    <path d="M70 96 Q92 110 88 154 L70 156 Q84 124 70 96Z" fill="#000" opacity=".14"/>
+    <path d="M34 104 Q38 96 48 95" stroke="#fff" stroke-width="3" fill="none" opacity=".35" stroke-linecap="round"/>
     <path d="M60 94 V156" stroke="${OUT}" stroke-width="2" opacity=".35"/>
     <rect x="28" y="140" width="64" height="9" fill="#1f2f4f"/>
     <path d="M42 110 l4 8 h8 l-6 5 l2 8 l-8 -5 l-8 5 l2 -8 l-6 -5 h8Z" fill="#ffd54f" stroke="${OUT}" stroke-width="1.5" transform="translate(-4 -4) scale(.9)"/>

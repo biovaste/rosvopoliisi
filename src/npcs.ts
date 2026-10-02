@@ -23,7 +23,7 @@ export const ownerById = (id: number): Owner | undefined => state.owners.find((o
 
 /** Where an owner holds their item. */
 export function handPos(o: Owner): Pt {
-  return { x: o.pos.x, y: o.pos.y - 62 * depth(o.pos.y) };
+  return { x: o.pos.x, y: o.pos.y - 62 * depth(o.pos.y) * o.size };
 }
 
 function freePoints(): Pt[] {
@@ -34,19 +34,20 @@ function syncItem(o: Owner): void {
   const v = view(o);
   if (o.robbed) return;
   const h = handPos(o);
-  v.item.scale = 0.8 * depth(o.pos.y);
+  v.item.scale = 0.8 * depth(o.pos.y) * Math.max(0.9, o.size);
   v.item.zAdd = o.pos.y - h.y + 2;
   v.item.at(h.x, h.y);
 }
 
 function create(role: Role, look: Owner['look'], pos: Pt): Owner {
-  const o: Owner = { id: nextId++, role, look, item: ROLE_ITEM[role], pos: { ...pos }, home: !!ROLE_HOME[role], robbed: false, done: false, walking: false };
+  const size = role === 'kid' || role === 'kid2' ? 0.84 : role === 'dog' ? 0.8 : 0.94 + Math.random() * 0.12;
+  const o: Owner = { id: nextId++, role, look, item: ROLE_ITEM[role], pos: { ...pos }, home: !!ROLE_HOME[role], size, robbed: false, done: false, walking: false };
   const sprite = makeActor(`owner ${role}`, `<div class="actor-inner">${ownerSvg(role, look)}</div>`);
   const bubble = document.createElement('div');
   bubble.className = pos.x > 950 ? 'bubble left' : 'bubble';
   bubble.innerHTML = `<div class="bubble-inner">${itemSvg(o.item)}</div>`;
   sprite.el.appendChild(bubble);
-  stand(sprite, pos);
+  stand(sprite, pos, size);
   const item = makeActor('item', `<div class="actor-inner">${itemSvg(o.item)}</div>`, 50, 50);
   views.set(o.id, { sprite, bubble, item });
   state.owners.push(o);
@@ -103,6 +104,7 @@ async function walkOwner(o: Owner, to: Pt): Promise<void> {
   o.walking = true;
   v.bubble.className = to.x > 950 ? 'bubble left' : 'bubble';
   await walkTo(v.sprite, to, {
+    k: o.size,
     onStep: () => {
       o.pos = { x: v.sprite.x, y: v.sprite.y };
       syncItem(o);
