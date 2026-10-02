@@ -4,12 +4,16 @@ import { randomCostumes, rosvoHead } from './people';
 import { sfx, unlockAudio } from './audio';
 import { updateHint } from './fx';
 import { begin, hintFor, initGame, onDown, onMove, onUp, targets } from './game';
+import { initActors } from './actors';
 import { initParent } from './parent';
+import { initPolice } from './police';
 import { buildScene, fitStage } from './scene';
 import { setPhase, state } from './state';
 
 const app = document.getElementById('app') as HTMLElement;
 const scene = buildScene(app);
+initActors(scene.stage);
+initPolice(scene);
 initGame(scene);
 initParent(app);
 
@@ -95,7 +99,7 @@ requestAnimationFrame(frame);
 const toClient = (p: { x: number; y: number } | null) =>
   p ? { x: p.x * view.scale + view.ox, y: p.y * view.scale + view.oy } : null;
 (window as unknown as { __rosvo: unknown }).__rosvo = {
-  state: () => ({ phase: state.phase, busy: state.busy, jailed: state.jailed, cycle: state.cycle, time: state.time, stickers: state.stickers, misses: state.misses, still: state.still, hint: state.hintOn, moving: state.moving, itemOut: state.itemOut }),
+  state: () => ({ phase: state.phase, busy: state.busy, jailed: state.jailed, cycle: state.cycle, time: state.time, stickers: state.stickers, misses: state.misses, still: state.still, hint: state.hintOn, moving: state.moving, itemOut: state.itemOut, npcs: state.owners.length, tier: Math.min(state.cycle, 3) }),
   targets: () => {
     const t = targets();
     return Object.fromEntries(Object.entries(t).map(([k, v]) => [k, toClient(v)]));

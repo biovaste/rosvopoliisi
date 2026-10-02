@@ -17,13 +17,19 @@ export type TimeOfDay = 'day' | 'evening' | 'night';
 export const TIMES: TimeOfDay[] = ['day', 'evening', 'night'];
 
 export interface Owner {
+  id: number;
   role: Role;
   look: Look;
   item: ItemKind;
-  /** Where the owner stands this cycle (feet). */
+  /** Where the owner stands (feet). */
   pos: Pt;
-  /** True once the item has been stolen and not yet returned. */
+  /** Lives in a building and always stands at its door. */
+  home: boolean;
+  /** The item is currently stolen. */
   robbed: boolean;
+  /** Already robbed (and helped) this cycle. */
+  done: boolean;
+  walking: boolean;
 }
 
 export interface Drag {
@@ -42,10 +48,8 @@ export interface State {
   time: TimeOfDay;
   owners: Owner[];
   costumes: Costume[];
-  /** Index into owners for the current robbery. */
+  /** Id of the owner robbed in the current round. */
   victim: number;
-  /** Order in which owners get robbed this cycle. */
-  order: number[];
   /** How many rosvot are in jail (0..3). */
   jailed: number;
   spot: number;
@@ -76,8 +80,7 @@ export const state: State = {
   time: 'day',
   owners: [],
   costumes: [],
-  victim: 0,
-  order: [],
+  victim: -1,
   jailed: 0,
   spot: 0,
   lastSpot: -1,
@@ -94,6 +97,9 @@ export const state: State = {
   hintOn: false,
   panelOpen: false,
 };
+
+/** Difficulty tier: 0 for the first level, up to 3. Rosvot and loot get better hidden. */
+export const tier = (): number => Math.min(state.cycle, 3);
 
 export function setPhase(p: Phase): void {
   state.phase = p;

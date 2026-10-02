@@ -39,12 +39,19 @@ export class Sprite {
   scale = 1;
   rot = 0;
   flip = false;
+  /** When set, the element's z-index follows its feet (y + zAdd), so nearer things draw on top. */
+  depthZ = false;
+  zAdd = 0;
+  /** Fixed z-index override (e.g. while dragged). */
+  zFix: number | null = null;
 
   constructor(
     public el: HTMLElement,
     public ax: number,
     public ay: number,
-  ) {}
+  ) {
+    el.style.transformOrigin = `${ax}px ${ay}px`;
+  }
 
   at(x: number, y: number): this {
     this.x = x;
@@ -55,6 +62,7 @@ export class Sprite {
   render(): this {
     const sx = this.flip ? -this.scale : this.scale;
     this.el.style.transform = `translate3d(${(this.x - this.ax).toFixed(1)}px,${(this.y - this.ay).toFixed(1)}px,0) rotate(${this.rot.toFixed(1)}deg) scale(${sx.toFixed(3)},${this.scale.toFixed(3)})`;
+    if (this.depthZ) this.el.style.zIndex = String(this.zFix ?? Math.round(this.y + this.zAdd));
     return this;
   }
 

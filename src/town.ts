@@ -1,40 +1,39 @@
-// The town is re-rolled on every page load: buildings, colours, tree, hiding
-// objects and decorations change between play sessions.
+// The town is re-rolled on every page load: building order and colours, tree
+// types, fences and flowers and the police officer change between sessions.
 
-import type { BuildingKind, BuildingLook, TreeStyle } from './art';
+import type { BuildingKind, BuildingLook, TreeStyle } from './buildings';
 import { pick, randomLook, shuffle, type Look } from './people';
 
-export type FrontKind = 'bush' | 'bin' | 'crate' | 'barrel';
-
 export interface Town {
+  /** Buildings in the four back-row slots, left to right. */
   buildings: BuildingLook[];
-  tree: TreeStyle;
-  front: FrontKind[];
-  bushColors: string[];
-  flowers: { x: number; colors: string[] }[];
+  backTree: TreeStyle;
+  nearTree: TreeStyle;
+  bush: string;
   fence: boolean;
   police: Look;
 }
 
-const WALLS = ['#ffe0b2', '#c8e6c9', '#fff3e0', '#e1f5fe', '#f8bbd0', '#fff9c4', '#d1c4e9', '#ffccbc'];
-const ROOFS = ['#e57373', '#7986cb', '#ffb74d', '#4db6ac', '#a1887f', '#ba68c8', '#f06292'];
-const DOORS = ['#8d6e63', '#5d4037', '#6d4c41', '#c62828', '#1565c0', '#2e7d32'];
-const FLOWER_COLORS = ['#f06292', '#ffd54f', '#ba68c8', '#ff8a65', '#ffffff', '#64b5f6'];
+const WALLS = ['#ffe3b3', '#cde8c4', '#fff4dc', '#d8ecf7', '#f9cfd8', '#fff6b8', '#e3d4f2', '#ffd3bd'];
+const ROOFS = ['#e0604f', '#5f7fd1', '#f29a38', '#3fa99a', '#9c6b4e', '#9b59b6', '#e85d8a', '#5aa04a'];
+const TRIMS = ['#e53935', '#43a047', '#1e88e5', '#8e24aa', '#f4511e', '#00897b'];
 
 export function makeTown(): Town {
-  const kinds: BuildingKind[] = shuffle(['bakery', 'shop', 'cafe', 'bank', 'house', 'house'] as BuildingKind[]).slice(0, 3);
+  const kinds = shuffle(['bakery', 'bank', 'jewelry', 'home'] as BuildingKind[]);
   const walls = shuffle(WALLS);
   const roofs = shuffle(ROOFS);
-  const front = shuffle(['bush', 'bush', 'bin', 'crate', 'barrel'] as FrontKind[]).slice(0, 3);
+  const trims = shuffle(TRIMS);
   return {
-    buildings: kinds.map((kind, i) => ({ kind, wall: walls[i], roof: roofs[i], door: pick(DOORS) })),
-    tree: pick(['apple', 'birch', 'autumn'] as TreeStyle[]),
-    front,
-    bushColors: shuffle(['#66bb6a', '#43a047', '#7cb342', '#4caf50']),
-    flowers: shuffle([340, 560, 860, 1110])
-      .slice(0, 2 + Math.floor(Math.random() * 2))
-      .map((x) => ({ x, colors: shuffle(FLOWER_COLORS).slice(0, 4) })),
-    fence: Math.random() < 0.6,
+    buildings: kinds.map((kind, i) => ({
+      kind,
+      wall: kind === 'bank' ? pick(['#f3ead8', '#e8eef2', '#efe4cf']) : walls[i],
+      roof: kind === 'bank' ? '#d8cbb0' : roofs[i],
+      trim: trims[i],
+    })),
+    backTree: pick(['apple', 'round', 'autumn'] as TreeStyle[]),
+    nearTree: pick(['apple', 'round', 'autumn'] as TreeStyle[]),
+    bush: pick(['#5aac44', '#4e9f3d', '#6cbf4a']),
+    fence: Math.random() < 0.7,
     police: randomLook(),
   };
 }

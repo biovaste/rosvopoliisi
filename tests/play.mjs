@@ -37,7 +37,7 @@ async function tap(p) {
   await touch('touchEnd', []);
 }
 
-async function drag(from, to, { palm = false } = {}) {
+async function drag(from, to, { palm = false, shot = '' } = {}) {
   const f = { ...from, id: 1 };
   await touch('touchStart', [f]);
   await sleep(50);
@@ -48,6 +48,7 @@ async function drag(from, to, { palm = false } = {}) {
     const p = { x: from.x + ((to.x - from.x) * i) / steps, y: from.y + ((to.y - from.y) * i) / steps, id: 1 };
     await touch('touchMove', palm ? [p, palmPt] : [p]);
     await sleep(25);
+    if (shot && i === steps / 2) await page.screenshot({ path: shot });
   }
   if (palm) await touch('touchEnd', [{ ...to, id: 1 }]); // palm lifts
   await sleep(40);
@@ -83,6 +84,7 @@ for (let cycle = 0; cycle < 2; cycle++) {
   for (let r = 0; r < 3; r++) {
     let s = await waitFor((s) => s.phase === 'hiding' && !s.busy, 'hiding');
     check(s.jailed === r, `robbery ${r + 1}: rosvo hiding, ${r} in jail (time=${s.time})`);
+    if (r === 0) check(s.npcs === 5 + cycle && s.tier === cycle, `level ${cycle + 1}: ${s.npcs} townspeople, difficulty tier ${s.tier}`);
     await sleep(400);
 
     if (cycle === 0 && r === 0) {
@@ -124,6 +126,11 @@ for (let cycle = 0; cycle < 2; cycle++) {
       s = await waitFor((s) => s.phase === 'caught' && !s.busy, 'caught');
       check(true, 'rosvo caught');
     }
+    s = await page.evaluate(() => ({
+      cuffed: document.querySelector('.actor.rosvo.cuffed') !== null,
+      escort: document.querySelector('.actor.officer.escorting') !== null,
+    }));
+    check(s.cuffed && s.escort, 'officer handcuffed the rosvo and holds it');
     let t;
 
     t = await tg();
@@ -134,7 +141,7 @@ for (let cycle = 0; cycle < 2; cycle++) {
       check(s.jailed === 0, 'drop away from jail floats back');
       t = await tg();
     }
-    await drag(t.rosvo, t.jail, { palm: cycle === 1 && r === 0 });
+    await drag(t.rosvo, t.jail, { palm: cycle === 1 && r === 0, shot: r === 0 ? `${OUT}/${String(shot++).padStart(2, '0')}-escort.png` : '' });
     s = await waitFor((s) => s.phase === 'returning' && !s.busy, 'returning');
     check(s.jailed === r + 1, `rosvo jailed (${s.jailed}/3)`);
     await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-jailed.png` });

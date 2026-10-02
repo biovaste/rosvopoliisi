@@ -2,7 +2,8 @@
 // Looks (skin tone, hair, gender) are chosen independently and uniformly for
 // everyone, so no look is tied to being a rosvo, a townsperson or the police.
 
-import { OUT, type ItemKind } from './art';
+import { OUT, cuffsSvg, type ItemKind } from './art';
+import type { BuildingKind } from './buildings';
 
 export const SKINS = ['#fde3cf', '#f2c4a0', '#dba67c', '#b87a4e', '#8c5636', '#5f3b26'];
 const HAIR_COLORS = ['#1f1612', '#3b2417', '#6b3f1f', '#a9622a', '#d9a64a', '#8a8a8a'];
@@ -222,6 +223,13 @@ export function rosvoSvg(c: Costume): string {
     <clipPath id="${id}"><rect x="30" y="98" width="60" height="66" rx="14"/></clipPath>
     <g clip-path="url(#${id})">${stripes}</g>
     <path d="M30 140 Q60 150 90 140" fill="none" stroke="${OUT}" stroke-width="3" opacity=".25"/>
+    <g class="arms-cuffed">
+      <rect x="22" y="104" width="13" height="36" rx="6.5" fill="#fff" stroke="${OUT}" stroke-width="3" transform="rotate(-38 28 106)"/>
+      <rect x="85" y="104" width="13" height="36" rx="6.5" fill="#fff" stroke="${OUT}" stroke-width="3" transform="rotate(38 92 106)"/>
+      <circle cx="50" cy="134" r="7.5" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
+      <circle cx="70" cy="134" r="7.5" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
+      ${cuffsSvg()}
+    </g>
     <g transform="translate(0 6)">${rosvoHead(c)}</g>
   </svg>`;
 }
@@ -237,8 +245,16 @@ export function sackSvg(c: Costume): string {
 
 // ---------- Townspeople ----------
 
-export type Role = 'baker' | 'kid' | 'kid2' | 'elder' | 'dog' | 'vendor' | 'jeweler' | 'banker' | 'fancy';
-export const ROLES: Role[] = ['baker', 'kid', 'kid2', 'elder', 'dog', 'vendor', 'jeweler', 'banker', 'fancy'];
+export type Role = 'baker' | 'kid' | 'kid2' | 'elder' | 'dog' | 'vendor' | 'jeweler' | 'banker' | 'fancy' | 'postie' | 'gardener';
+export const ROLES: Role[] = ['baker', 'kid', 'kid2', 'elder', 'dog', 'vendor', 'jeweler', 'banker', 'fancy', 'postie', 'gardener'];
+
+/** Roles that always appear at the door of their own building. Others stand anywhere. */
+export const ROLE_HOME: Partial<Record<Role, BuildingKind>> = {
+  baker: 'bakery',
+  banker: 'bank',
+  jeweler: 'jewelry',
+  elder: 'home',
+};
 
 export const ROLE_ITEM: Record<Role, ItemKind> = {
   baker: 'cake',
@@ -250,6 +266,8 @@ export const ROLE_ITEM: Record<Role, ItemKind> = {
   jeweler: 'gem',
   banker: 'gold',
   fancy: 'jewels',
+  postie: 'parcel',
+  gardener: 'watering',
 };
 
 function faces(cx: number, cy: number): string {
@@ -329,6 +347,20 @@ function outfit(role: Role): Outfit {
         legs: '#6a1b9a',
         extra: `${[44, 52, 60, 68, 76].map((x, i) => `<circle cx="${x}" cy="${100 + (i === 2 ? 6 : i % 2 ? 4 : 0)}" r="4" fill="#fff" stroke="${OUT}" stroke-width="1.5"/>`).join('')}`,
       };
+    case 'postie':
+      return {
+        shirt: '#ffb300',
+        legs: '#1e3a5f',
+        hat: `<path d="M30 36 Q32 12 60 12 Q88 12 90 36Z" fill="#1e3a5f" stroke="${OUT}" stroke-width="4"/><path d="M84 34 Q104 32 106 40 L86 40Z" fill="#1e3a5f" stroke="${OUT}" stroke-width="3"/>`,
+        extra: `<path d="M34 96 L86 146" stroke="#6d4c41" stroke-width="6"/>`,
+      };
+    case 'gardener':
+      return {
+        shirt: '#7cb342',
+        legs: '#5d4037',
+        hat: `<ellipse cx="60" cy="34" rx="44" ry="9" fill="#f3d27a" stroke="${OUT}" stroke-width="3.5"/><path d="M36 34 Q38 12 60 12 Q82 12 84 34Z" fill="#f3d27a" stroke="${OUT}" stroke-width="3.5"/>`,
+        extra: `<path d="M38 112 H82 V156 H38Z" fill="#a1887f" stroke="${OUT}" stroke-width="3"/>`,
+      };
     case 'dog':
       return { shirt: '', legs: '' };
   }
@@ -341,8 +373,8 @@ export function ownerSvg(role: Role, look: Look): string {
   const skin = l.skin;
   return `<svg viewBox="0 0 120 200" width="120" height="200">
     <ellipse class="shadow" cx="60" cy="194" rx="42" ry="8" fill="#000" opacity=".15"/>
-    <rect x="40" y="150" width="15" height="40" rx="6" fill="${o.legs}" stroke="${OUT}" stroke-width="3"/>
-    <rect x="65" y="150" width="15" height="40" rx="6" fill="${o.legs}" stroke="${OUT}" stroke-width="3"/>
+    <rect class="leg l" x="40" y="150" width="15" height="40" rx="6" fill="${o.legs}" stroke="${OUT}" stroke-width="3"/>
+    <rect class="leg r" x="65" y="150" width="15" height="40" rx="6" fill="${o.legs}" stroke="${OUT}" stroke-width="3"/>
     <ellipse cx="46" cy="192" rx="12" ry="6" fill="${OUT}"/><ellipse cx="74" cy="192" rx="12" ry="6" fill="${OUT}"/>
     <g class="arms">
       <rect x="16" y="98" width="14" height="44" rx="7" fill="${o.shirt}" stroke="${OUT}" stroke-width="3" transform="rotate(-20 23 100)"/>
@@ -383,4 +415,31 @@ export function policeHead(l: Look): string {
     <rect x="24" y="32" width="72" height="10" rx="4" fill="#1f3f7a" stroke="${OUT}" stroke-width="4"/>
     <path d="M60 14 l4 8 h8 l-6 5 l2 8 l-8 -5 l-8 5 l2 -8 l-6 -5 h8Z" fill="#ffd54f" stroke="${OUT}" stroke-width="1.5"/>`;
   return headBase(l, face, cap);
+}
+
+/** Full-body police officer. viewBox 0 0 120 200. `.escorting` shows the arm that holds the rosvo. */
+export function officerSvg(l: Look): string {
+  const skin = l.skin;
+  const cap = `<path d="M26 36 Q30 6 60 8 Q90 6 94 36Z" fill="#2f5aa8" stroke="${OUT}" stroke-width="4"/>
+    <rect x="24" y="32" width="72" height="10" rx="4" fill="#1f3f7a" stroke="${OUT}" stroke-width="4"/>
+    <path d="M60 14 l4 8 h8 l-6 5 l2 8 l-8 -5 l-8 5 l2 -8 l-6 -5 h8Z" fill="#ffd54f" stroke="${OUT}" stroke-width="1.5"/>`;
+  return `<svg viewBox="0 0 120 200" width="120" height="200">
+    <ellipse class="shadow" cx="60" cy="194" rx="42" ry="8" fill="#000" opacity=".15"/>
+    <rect class="leg l" x="40" y="150" width="15" height="40" rx="6" fill="#1f2f4f" stroke="${OUT}" stroke-width="3"/>
+    <rect class="leg r" x="65" y="150" width="15" height="40" rx="6" fill="#1f2f4f" stroke="${OUT}" stroke-width="3"/>
+    <ellipse cx="46" cy="192" rx="12" ry="6" fill="${OUT}"/><ellipse cx="74" cy="192" rx="12" ry="6" fill="${OUT}"/>
+    <rect x="16" y="98" width="14" height="46" rx="7" fill="#3d6fc4" stroke="${OUT}" stroke-width="3" transform="rotate(-10 23 100)"/>
+    <circle cx="30" cy="144" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
+    <g class="arm-rest"><rect x="90" y="98" width="14" height="46" rx="7" fill="#3d6fc4" stroke="${OUT}" stroke-width="3" transform="rotate(10 97 100)"/>
+      <circle cx="90" cy="144" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/></g>
+    <g class="arm-escort"><rect x="90" y="100" width="14" height="44" rx="7" fill="#3d6fc4" stroke="${OUT}" stroke-width="3" transform="rotate(-62 97 104)"/>
+      <circle cx="136" cy="120" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/></g>
+    <rect x="28" y="92" width="64" height="66" rx="18" fill="#3d6fc4" stroke="${OUT}" stroke-width="4"/>
+    <path d="M60 94 V156" stroke="${OUT}" stroke-width="2" opacity=".35"/>
+    <rect x="28" y="140" width="64" height="9" fill="#1f2f4f"/>
+    <path d="M42 110 l4 8 h8 l-6 5 l2 8 l-8 -5 l-8 5 l2 -8 l-6 -5 h8Z" fill="#ffd54f" stroke="${OUT}" stroke-width="1.5" transform="translate(-4 -4) scale(.9)"/>
+    <g transform="translate(0 2)">${headBase(l, `<g class="blink" ${blinkDelay()}><circle cx="51" cy="58" r="3.5" fill="${OUT}"/><circle cx="69" cy="58" r="3.5" fill="${OUT}"/></g>
+      <path d="M48 70 Q60 80 72 70" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
+      <ellipse cx="42" cy="68" rx="5" ry="3" fill="${BLUSH}" opacity=".5"/><ellipse cx="78" cy="68" rx="5" ry="3" fill="${BLUSH}" opacity=".5"/>`, cap)}</g>
+  </svg>`;
 }

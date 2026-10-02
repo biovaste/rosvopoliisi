@@ -154,6 +154,13 @@ export const sfx = {
   sticker(): void {
     [84, 88, 91, 96].forEach((n, i) => tone({ type: 'sine', freq: NOTE(n), at: i * 0.06, dur: 0.18, vol: 0.12 }));
   },
+  cuff(): void {
+    noise(0, 0.05, 0.25, 4000);
+    tone({ type: 'square', freq: 1800, dur: 0.05, vol: 0.06 });
+    noise(0.12, 0.05, 0.25, 4500);
+    tone({ type: 'square', freq: 2100, at: 0.12, dur: 0.05, vol: 0.06 });
+    tone({ type: 'triangle', freq: NOTE(79), at: 0.25, dur: 0.2, vol: 0.12 });
+  },
   hint(): void {
     tone({ type: 'sine', freq: NOTE(81), dur: 0.15, vol: 0.08 });
     tone({ type: 'sine', freq: NOTE(86), at: 0.15, dur: 0.2, vol: 0.08 });

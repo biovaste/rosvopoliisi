@@ -1,116 +1,55 @@
-// Game logic: steal -> hide (and move) -> catch -> jail -> find loot -> return -> celebrate.
+// Game logic: steal -> hide (and move) -> catch + cuff -> escort to jail ->
+// find loot -> return -> celebrate. Difficulty rises with each level (tier()).
 
 import * as art from './art';
+import { makeActor, stand, walkTo } from './actors';
 import { sfx } from './audio';
-import { confetti, hearts, hideHint, showHint, sparkle, ripple } from './fx';
-import {
-  CAR,
-  DOOR,
-  JAIL_RADIUS,
-  JAIL_TARGET,
-  OWNER_RADIUS,
-  OWNER_SLOTS,
-  PEEK_H,
-  SHELF,
-  SPOTS,
-  WINDOWS,
-  dist,
-  peekFeet,
-  spotRect,
-  type Pt,
-} from './layout';
-import { ROLES, ROLE_ITEM, ownerSvg, randomCostumes, randomLooks, rosvoHead, rosvoSvg, sackSvg, shuffle, type Costume } from './people';
-import type { Scene } from './scene';
-import { TIMES, setPhase, state, type Owner } from './state';
+import { confetti, hearts, hideHint, ripple, showHint, sparkle } from './fx';
+import { CAR, DOOR, JAIL_RADIUS, JAIL_TARGET, OWNER_RADIUS, SHELF, SPOTS, WINDOWS, clamp, depth, dist, peekFeet, peekH, spotRect, type Pt, type SpotDef } from './layout';
+import { fadeOutCrowd, handPos, ownerById, pickVictim, spawnCrowd, swapSomeone, syncItem, view, wander } from './npcs';
+import { randomCostumes, rosvoHead, rosvoSvg, sackSvg, shuffle, type Costume } from './people';
+import { backToIdle, cuff, driveAway, escortIn, follow, intoCar, officer, outOfCar } from './police';
+import { Z, type Scene } from './scene';
+import { TIMES, setPhase, state, tier, type Owner } from './state';
 import { Sprite, ease, tween, wait } from './tween';
 
 let scene: Scene;
-
-interface OwnerView {
-  el: HTMLElement;
-  sprite: Sprite;
-  bubble: HTMLElement;
-  item: Sprite;
-}
-let ownerViews: OwnerView[] = [];
 let rosvo: Sprite;
 let peekTimer = 0;
+let townTimer = 0;
 /** Bumped to cancel a rosvo's run between spots. */
 let moveGen = 0;
 
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-
-function el(cls: string, html = ''): HTMLDivElement {
-  const d = document.createElement('div');
-  d.className = cls;
-  d.innerHTML = html;
-  scene.actors.appendChild(d);
-  return d;
-}
+// Per-tier tuning: how much of the rosvo / loot shows, peek timing, how often rosvot dash.
+const PEEK_OFF = [0, 30, 52, 66];
+const LOOT_SHOW = [72, 54, 40, 30];
+const UP_MS = [2400, 2000, 1700, 1500];
+const DOWN_MS = [800, 1000, 1250, 1450];
+const MOVE_CHANCE = [0.25, 0.35, 0.45, 0.55];
 
 export function initGame(s: Scene): void {
   scene = s;
-  const r = el('rosvo actor');
-  r.innerHTML = `<div class="actor-inner"></div><div class="sack"></div>`;
-  rosvo = new Sprite(r, 60, 200);
+  rosvo = makeActor('rosvo', `<div class="actor-inner"></div><div class="sack"></div>`);
   rosvo.at(1400, 700).show(false);
   setTime('day');
 }
 
 const costume = (): Costume => state.costumes[state.jailed];
-const victim = (): Owner => state.owners[state.victim];
-const victimView = (): OwnerView => ownerViews[state.victim];
-
-// ---------- Cycle setup ----------
+const victim = (): Owner => ownerById(state.victim) as Owner;
 
 function setTime(t: (typeof TIMES)[number]): void {
   state.time = t;
   document.body.dataset.time = t;
 }
 
-function handPos(o: Owner): [number, number] {
-  return [o.pos.x, o.pos.y - 62];
-}
-
-function buildOwners(): void {
-  for (const v of ownerViews) {
-    v.el.remove();
-    v.item.el.remove();
-  }
-  const roles = shuffle(ROLES).slice(0, 3);
-  const looks = randomLooks(3);
-  // Owners stand in different places every cycle.
-  const slots = shuffle(OWNER_SLOTS).map((p) => ({ x: p.x + (Math.random() - 0.5) * 70, y: p.y + (Math.random() - 0.5) * 16 }));
-  slots.sort((a, b) => a.x - b.x);
-  state.owners = roles.map((role, i) => ({ role, look: looks[i], item: ROLE_ITEM[role], pos: slots[i], robbed: false }));
-  ownerViews = state.owners.map((o) => {
-    const e = el(`owner actor ${o.role}`, `<div class="actor-inner">${ownerSvg(o.role, o.look)}</div>`);
-    const bubble = document.createElement('div');
-    bubble.className = o.pos.x > 950 ? 'bubble left' : 'bubble';
-    bubble.innerHTML = `<div class="bubble-inner">${art.itemSvg(o.item)}</div>`;
-    e.appendChild(bubble);
-    const sprite = new Sprite(e, 60, 200).at(o.pos.x, o.pos.y);
-    const item = new Sprite(el('item actor', `<div class="actor-inner">${art.itemSvg(o.item)}</div>`), 50, 50);
-    item.scale = 0.8;
-    item.at(...handPos(o));
-    return { el: e, sprite, bubble, item };
-  });
-}
+// ---------- Cycle ----------
 
 async function startCycle(): Promise<void> {
   state.jailed = 0;
   state.costumes = randomCostumes(3);
-  buildOwners();
-  state.order = shuffle([0, 1, 2]);
-  for (const v of ownerViews) {
-    v.el.classList.add('enter');
-    v.item.el.classList.add('enter');
-  }
-  await wait(700);
-  for (const v of ownerViews) {
-    v.el.classList.remove('enter');
-    v.item.el.classList.remove('enter');
-  }
+  spawnCrowd(5 + (state.cycle % 3));
+  scheduleTown();
+  await wait(800);
   void startRobbery();
 }
 
@@ -120,27 +59,47 @@ export function begin(): void {
   void startCycle();
 }
 
+/** Townspeople stroll around every few seconds. */
+function scheduleTown(): void {
+  window.clearTimeout(townTimer);
+  townTimer = window.setTimeout(
+    () => {
+      if (state.phase !== 'celebrating' && state.phase !== 'start') void wander();
+      scheduleTown();
+    },
+    4000 + Math.random() * 4000,
+  );
+}
+
 // ---------- Robbery ----------
 
-function pickSpot(): number {
-  let i: number;
-  do i = Math.floor(Math.random() * SPOTS.length);
-  while (i === state.spot || i === state.lastSpot || i === state.stashSpot);
-  state.lastSpot = state.spot;
+function spotOk(i: number, forStash: boolean): boolean {
+  const s = SPOTS[i];
+  if (s.use !== 'both' && s.use !== (forStash ? 'stash' : 'rosvo')) return false;
+  if (i === state.spot || i === state.lastSpot || i === state.stashSpot) return false;
+  // Far spots (rooftops, chimneys, the back tree) unlock at later levels.
+  if (s.far && tier() < (forStash ? 2 : 1)) return false;
+  return true;
+}
+
+function pickSpot(forStash = false): number {
+  const ok = SPOTS.map((_, i) => i).filter((i) => spotOk(i, forStash));
+  const i = shuffle(ok)[0] ?? SPOTS.findIndex((s, j) => s.use !== 'stash' && j !== state.stashSpot);
+  if (!forStash) state.lastSpot = state.spot;
   return i;
 }
 
+/** Centre of the stashed loot. */
 function stashPoint(): Pt {
   const s = SPOTS[state.stashSpot];
-  return { x: s.x, y: s.top - 20 };
+  return { x: s.x, y: s.top - LOOT_SHOW[tier()] * s.s + 50 * s.s };
 }
 
-async function runTo(p: Pt, ms: number, hop: number, alive?: () => boolean): Promise<void> {
-  rosvo.flip = p.x < rosvo.x;
-  rosvo.el.classList.add('walking', 'running');
-  await rosvo.moveTo(p.x, p.y, ms, hop, ease.inOut, alive);
-  rosvo.el.classList.remove('walking', 'running');
+async function runTo(p: Pt, hop: number, alive?: () => boolean): Promise<void> {
+  await walkTo(rosvo, p, { run: true, speed: 480, hop, ease: ease.inOut, alive });
 }
+
+const hopFor = (a: SpotDef | null, b: SpotDef): number => (a?.far || b.far ? 160 : 30);
 
 async function startRobbery(): Promise<void> {
   setPhase('stealing');
@@ -149,45 +108,50 @@ async function startRobbery(): Promise<void> {
   state.still = false;
   state.moving = false;
   state.itemOut = false;
-  state.victim = state.order[state.jailed];
-  const owner = victim();
-  const ov = victimView();
+  state.stashSpot = -1;
+
+  // Sometimes someone leaves town and a newcomer arrives between robberies.
+  if (state.jailed > 0 && Math.random() < 0.5) await swapSomeone();
+
+  let o = pickVictim();
+  while (!o) {
+    await wait(300);
+    o = pickVictim();
+  }
+  state.victim = o.id;
+  const v = view(o);
   const c = costume();
 
   (rosvo.el.querySelector('.actor-inner') as HTMLElement).innerHTML = rosvoSvg(c);
   (rosvo.el.querySelector('.sack') as HTMLElement).innerHTML = sackSvg(c);
-  rosvo.el.className = 'rosvo actor walking';
-  rosvo.scale = 1;
+  rosvo.el.className = 'actor rosvo';
   rosvo.rot = 0;
+  rosvo.el.style.opacity = '';
 
-  // Sneak in from the nearest edge.
-  const fromRight = owner.pos.x > 600 || Math.random() < 0.4;
-  rosvo.flip = fromRight;
-  rosvo.at(fromRight ? 1320 : -120, owner.pos.y + 30).show(true);
+  // Sneak in from the nearest side, along the street.
+  const fromRight = o.pos.x > 600;
+  const s = depth(o.pos.y);
+  stand(rosvo, { x: fromRight ? 1320 : -120, y: Math.max(560, o.pos.y + 4) }).show(true);
   sfx.sneak();
-  await rosvo.moveTo(owner.pos.x + (fromRight ? 95 : -95), owner.pos.y + 30, 1500, 0, ease.linear);
+  await walkTo(rosvo, { x: o.pos.x + (fromRight ? 80 : -80) * s, y: o.pos.y + 4 }, { speed: 300 });
 
   // Grab!
-  rosvo.el.classList.remove('walking');
   sfx.grab();
-  owner.robbed = true;
-  ov.el.classList.add('sad');
-  void ov.item.moveTo(rosvo.x, rosvo.y - 60, 250, 40);
+  o.robbed = true;
+  v.sprite.el.classList.add('sad');
+  void v.item.moveTo(rosvo.x, rosvo.y - 60 * s, 250, 40);
   await wait(260);
-  ov.item.show(false);
+  v.item.show(false);
   rosvo.el.classList.add('has-sack');
   sfx.giggle();
   await wait(250);
-  ov.bubble.classList.add('on');
+  v.bubble.classList.add('on');
 
   // Stash the loot in one place...
-  state.stashSpot = -1;
-  state.stashSpot = pickSpot();
+  state.stashSpot = pickSpot(true);
   const stash = SPOTS[state.stashSpot];
-  await runTo(peekFeet(stash), 1000, stash.back ? 200 : 40);
-  const sv = scene.spots[state.stashSpot];
-  sv.stash.innerHTML = art.itemSvg(owner.item);
-  sv.stash.classList.add('on');
+  await runTo(peekFeet(stash), hopFor(null, stash));
+  putLoot(o);
   rosvo.el.classList.remove('has-sack');
   sfx.grab();
   await wait(300);
@@ -195,7 +159,7 @@ async function startRobbery(): Promise<void> {
   // ...and hide somewhere else.
   state.spot = pickSpot();
   const spot = SPOTS[state.spot];
-  await runTo(peekFeet(spot), 1000, spot.back || stash.back ? 200 : 40);
+  await runTo(peekFeet(spot), hopFor(stash, spot));
   rosvo.show(false);
 
   setPeeker(state.spot, c, true);
@@ -205,6 +169,18 @@ async function startRobbery(): Promise<void> {
   schedulePeek(true);
 }
 
+function putLoot(o: Owner): void {
+  const sv = scene.spots[state.stashSpot];
+  const def = SPOTS[state.stashSpot];
+  const show = LOOT_SHOW[tier()];
+  // Loot sits in the peek box, behind the object, with `show` px poking out.
+  const y = peekH(def) - def.clip - show * def.s;
+  sv.stash.style.transform = `translate3d(${(sv.box.offsetWidth - 100 * def.s) / 2}px,${y}px,0) scale(${def.s})`;
+  sv.stash.innerHTML = art.itemSvg(o.item);
+  sv.stash.classList.add('on');
+  sv.stash.classList.toggle('twinkle', tier() < 2);
+}
+
 function setPeeker(idx: number, c: Costume, up: boolean): void {
   scene.spots.forEach((sv, i) => {
     if (i === idx) {
@@ -212,6 +188,7 @@ function setPeeker(idx: number, c: Costume, up: boolean): void {
       sv.peeker.classList.add('active');
       sv.peeker.classList.toggle('up', up);
       sv.peeker.classList.toggle('still', state.still);
+      sv.peeker.style.setProperty('--off', `${state.still ? 0 : PEEK_OFF[tier()]}px`);
     } else {
       sv.peeker.classList.remove('active', 'up', 'still');
       sv.inner.innerHTML = '';
@@ -221,21 +198,21 @@ function setPeeker(idx: number, c: Costume, up: boolean): void {
 
 const peekerView = () => scene.spots[state.spot];
 
-/** Later cycles: the rosvo is more likely to run to a new spot. */
-const moveChance = () => Math.min(0.6, 0.3 + 0.1 * state.cycle);
-
 function schedulePeek(up: boolean): void {
   window.clearTimeout(peekTimer);
   if (state.phase !== 'hiding' || state.moving) return;
   const pv = peekerView();
-  pv.peeker.classList.toggle('up', up || state.still || state.hintOn);
+  const full = state.still || state.hintOn;
+  pv.peeker.style.setProperty('--off', `${full ? 0 : PEEK_OFF[tier()]}px`);
+  pv.peeker.classList.toggle('up', up || full);
   if (state.still) {
     pv.peeker.classList.add('still');
     return;
   }
-  const ms = up ? 2400 + Math.random() * 1200 : 800 + Math.random() * 500;
+  const t = tier();
+  const ms = up ? UP_MS[t] * (1 + Math.random() * 0.5) : DOWN_MS[t] * (1 + Math.random() * 0.6);
   peekTimer = window.setTimeout(() => {
-    if (up && !state.hintOn && !state.busy && Math.random() < moveChance()) void sneakMove();
+    if (up && !state.hintOn && !state.busy && Math.random() < MOVE_CHANCE[t]) void sneakMove();
     else schedulePeek(!up);
   }, ms);
 }
@@ -255,10 +232,10 @@ async function sneakMove(): Promise<void> {
   state.spot = pickSpot();
   state.moving = true;
   const to = SPOTS[state.spot];
-  rosvo.el.className = 'rosvo actor';
-  rosvo.at(from.x, from.y).show(true);
+  rosvo.el.className = 'actor rosvo';
+  stand(rosvo, from).show(true);
   sfx.sneak();
-  await runTo(peekFeet(to), 1500, fromSpot.back || to.back ? 200 : 40, alive);
+  await runTo(peekFeet(to), hopFor(fromSpot, to), alive);
   if (!alive()) return;
   rosvo.show(false);
   state.moving = false;
@@ -268,6 +245,8 @@ async function sneakMove(): Promise<void> {
 }
 
 // ---------- Input ----------
+
+const rosvoCentre = (): Pt => ({ x: rosvo.x, y: rosvo.y - 100 * rosvo.scale });
 
 export function onDown(p: Pt, pointerId: number): void {
   state.lastInput = performance.now();
@@ -283,19 +262,23 @@ export function onDown(p: Pt, pointerId: number): void {
   switch (state.phase) {
     case 'hiding':
       return tapWhileHiding(p);
-    case 'caught':
-      if (dist(p, { x: rosvo.x, y: rosvo.y - 100 }) < 130) startDrag('rosvo', p, pointerId);
+    case 'caught': {
+      const near = dist(p, rosvoCentre()) < 130 || dist(p, { x: officer.x, y: officer.y - 100 * officer.scale }) < 110;
+      if (near) startDrag('rosvo', p, pointerId);
       else missFeedback(p, rosvo.el);
       return;
-    case 'returning':
+    }
+    case 'returning': {
+      const item = view(victim()).item;
       if (!state.itemOut) {
         if (dist(p, stashPoint()) < 120) {
           pullOutLoot();
           startDrag('item', p, pointerId);
         } else missFeedback(p, scene.spots[state.stashSpot].stash);
-      } else if (dist(p, victimView().item) < 110) startDrag('item', p, pointerId);
-      else missFeedback(p, victimView().item.el);
+      } else if (dist(p, item) < 110) startDrag('item', p, pointerId);
+      else missFeedback(p, item.el);
       return;
+    }
     default:
       ripple(scene, p, false);
       sfx.tap();
@@ -312,7 +295,7 @@ function missFeedback(p: Pt, e: HTMLElement): void {
 
 function tapWhileHiding(p: Pt): void {
   if (state.moving) {
-    if (dist(p, { x: rosvo.x, y: rosvo.y - 100 }) < 140) {
+    if (dist(p, rosvoCentre()) < 140) {
       ripple(scene, p, true);
       moveGen++;
       state.moving = false;
@@ -366,14 +349,19 @@ async function catchRosvo(from: Pt, onTheRun: boolean): Promise<void> {
   pv.peeker.classList.remove('active', 'up', 'still');
   pv.inner.innerHTML = '';
 
-  // Pop out with hands up.
-  rosvo.el.className = 'rosvo actor caught';
+  // Pop out with hands up, then the officer comes running with the handcuffs.
+  rosvo.el.className = 'actor rosvo caught';
   rosvo.flip = false;
-  rosvo.at(from.x, from.y).show(true);
-  sparkle(scene, { x: from.x, y: from.y - 150 });
-  const land = onTheRun ? { x: clamp(from.x, 380, 1000), y: 760 } : SPOTS[state.spot].land;
-  await rosvo.moveTo(land.x, land.y, 650, 120, ease.inOut);
+  stand(rosvo, from).show(true);
+  rosvo.scale = SPOTS[state.spot].s;
+  rosvo.render();
+  sparkle(scene, { x: from.x, y: from.y - 150 * rosvo.scale });
+  const land = onTheRun ? { x: clamp(from.x, 300, 1100), y: clamp(from.y, 640, 790) } : SPOTS[state.spot].land;
+  await walkTo(rosvo, land, { hop: 110, speed: 700, ease: ease.inOut });
+  rosvo.flip = false;
+  rosvo.render();
   state.rosvoRest = { ...land };
+  await cuff(rosvo);
   state.busy = false;
   setPhase('caught');
   state.lastInput = performance.now();
@@ -381,21 +369,28 @@ async function catchRosvo(from: Pt, onTheRun: boolean): Promise<void> {
 
 function pullOutLoot(): void {
   const sv = scene.spots[state.stashSpot];
-  sv.stash.classList.remove('on', 'glow');
+  const p = stashPoint();
+  sv.stash.classList.remove('on', 'glow', 'twinkle');
   sv.stash.innerHTML = '';
   const def = SPOTS[state.stashSpot];
-  const item = victimView().item;
-  item.scale = 1;
-  item.at(def.x, def.top - 20).show(true);
+  const item = view(victim()).item;
+  item.scale = def.s;
+  item.zAdd = 50;
+  item.at(p.x, p.y).show(true);
   item.el.classList.add('glow');
   state.itemOut = true;
-  state.itemRest = { x: def.x, y: def.back ? 690 : 700 };
+  state.itemRest = def.far ? { x: def.land.x, y: 600 } : { x: def.x, y: Math.min(def.top + def.h * 0.5, 740) };
 }
 
 function startDrag(what: 'rosvo' | 'item', p: Pt, pointerId: number): void {
-  const s = what === 'rosvo' ? rosvo : victimView().item;
+  const s = what === 'rosvo' ? rosvo : view(victim()).item;
   state.drag = { pointerId, what, dx: s.x - p.x, dy: s.y - p.y };
   s.el.classList.add('dragging');
+  s.zFix = Z.drag;
+  if (what === 'rosvo') {
+    officer.zFix = Z.drag - 1;
+    officer.el.classList.add('walking');
+  }
   sfx.pickup();
   ripple(scene, p, true);
   if (what === 'rosvo') setPhase('carrying');
@@ -405,8 +400,16 @@ export function onMove(p: Pt, pointerId: number): void {
   const d = state.drag;
   if (!d || d.pointerId !== pointerId) return;
   state.lastInput = performance.now();
-  const s = d.what === 'rosvo' ? rosvo : victimView().item;
-  s.at(p.x + d.dx, p.y + d.dy);
+  if (d.what === 'rosvo') {
+    const y = clamp(p.y + d.dy, 470, 800);
+    rosvo.scale = depth(y);
+    rosvo.at(p.x + d.dx, y);
+    follow(rosvo);
+  } else {
+    const it = view(victim()).item;
+    it.scale = depth(p.y + d.dy + 60);
+    it.at(p.x + d.dx, p.y + d.dy);
+  }
 }
 
 export function onUp(p: Pt, pointerId: number): void {
@@ -420,27 +423,24 @@ export function onUp(p: Pt, pointerId: number): void {
 
 async function dropRosvo(): Promise<void> {
   rosvo.el.classList.remove('dragging');
-  if (dist({ x: rosvo.x, y: rosvo.y - 100 }, JAIL_TARGET) > JAIL_RADIUS) {
-    state.busy = true;
+  rosvo.zFix = null;
+  officer.zFix = null;
+  officer.el.classList.remove('walking');
+  state.busy = true;
+  if (dist(rosvoCentre(), JAIL_TARGET) > JAIL_RADIUS) {
     sfx.floatBack();
-    await rosvo.moveTo(state.rosvoRest.x, state.rosvoRest.y, 700, 30, ease.out);
+    await walkTo(rosvo, state.rosvoRest, { speed: 500, ease: ease.out, onStep: () => follow(rosvo) });
+    rosvo.flip = false;
+    follow(rosvo);
     state.busy = false;
     setPhase('caught');
     return;
   }
-  state.busy = true;
-  const n = state.jailed;
-  const win = WINDOWS[n];
-  const x0 = rosvo.x;
-  const y0 = rosvo.y;
-  await tween(550, (t) => {
-    rosvo.x = x0 + (win.x - x0) * t;
-    rosvo.y = y0 + (win.y + 40 - y0) * t - Math.sin(Math.PI * t) * 60;
-    rosvo.scale = 1 - 0.6 * t;
-    rosvo.render();
-  });
+  // Escorted into the station.
+  await escortIn(rosvo);
   rosvo.show(false);
-  rosvo.scale = 1;
+  rosvo.el.style.opacity = '';
+  const n = state.jailed;
   sfx.clang();
   const face = scene.windows[n].face;
   face.innerHTML = `<svg viewBox="0 0 120 100" width="76" height="64">${rosvoHead(state.costumes[n])}</svg>`;
@@ -448,8 +448,9 @@ async function dropRosvo(): Promise<void> {
   state.jailed++;
   scene.car.classList.add('flash');
   window.setTimeout(() => scene.car.classList.remove('flash'), 1200);
-  sparkle(scene, win, 10);
-  await wait(400);
+  sparkle(scene, WINDOWS[n], 10);
+  void backToIdle();
+  await wait(300);
 
   // Now find the loot.
   scene.spots[state.stashSpot].stash.classList.add('glow');
@@ -459,34 +460,36 @@ async function dropRosvo(): Promise<void> {
 }
 
 async function dropItem(): Promise<void> {
-  const ov = victimView();
-  const owner = victim();
-  ov.item.el.classList.remove('dragging');
-  if (dist(ov.item, { x: owner.pos.x, y: owner.pos.y - 100 }) > OWNER_RADIUS) {
+  const o = victim();
+  const v = view(o);
+  v.item.el.classList.remove('dragging');
+  v.item.zFix = null;
+  if (dist(v.item, { x: o.pos.x, y: o.pos.y - 100 * depth(o.pos.y) }) > OWNER_RADIUS) {
     state.busy = true;
     sfx.floatBack();
-    await ov.item.moveTo(state.itemRest.x, state.itemRest.y, 700, 30, ease.out);
+    await v.item.moveTo(state.itemRest.x, state.itemRest.y, 700, 30, ease.out);
+    v.item.scale = depth(state.itemRest.y + 60);
+    v.item.render();
     state.busy = false;
     return;
   }
   state.busy = true;
-  const [hx, hy] = handPos(owner);
-  ov.item.el.classList.remove('glow');
-  void tween(300, (t) => {
-    ov.item.scale = 1 - 0.2 * t;
-    ov.item.render();
-  });
-  await ov.item.moveTo(hx, hy, 300, 0, ease.out);
-  owner.robbed = false;
+  const h = handPos(o);
+  v.item.el.classList.remove('glow');
+  await v.item.moveTo(h.x, h.y, 300, 0, ease.out);
+  o.robbed = false;
+  o.done = true;
+  syncItem(o);
   state.stashSpot = -1;
-  ov.bubble.classList.remove('on');
-  ov.el.classList.remove('sad');
-  ov.el.classList.add('happy');
+  v.bubble.classList.remove('on');
+  v.sprite.el.classList.remove('sad');
+  v.sprite.el.classList.add('happy');
   sfx.cheer();
-  sparkle(scene, { x: hx, y: hy - 60 }, 12);
-  hearts(scene, { x: hx, y: hy - 150 });
+  sparkle(scene, { x: h.x, y: h.y - 60 }, 12);
+  hearts(scene, { x: h.x, y: h.y - 150 * depth(o.pos.y) });
   await wait(1400);
-  ov.el.classList.remove('happy');
+  v.sprite.el.classList.remove('happy');
+  state.victim = -1;
 
   if (state.jailed >= 3) void celebrate();
   else void startRobbery();
@@ -504,19 +507,18 @@ async function celebrate(): Promise<void> {
   sfx.fanfare();
   await awardSticker();
 
-  // The rosvot say sorry and the police drive them away.
+  // The rosvot say sorry, hop into the police car and the officer drives them away.
   await rosvotToCar();
+  await intoCar();
   await driveAway();
   scene.car.classList.remove('flash');
+  await outOfCar();
 
   // Time moves on: day -> evening -> night -> day.
   state.cycle++;
   setTime(TIMES[state.cycle % TIMES.length]);
-  for (const v of ownerViews) {
-    v.el.classList.add('leave');
-    v.item.el.classList.add('leave');
-  }
-  await wait(1200);
+  fadeOutCrowd();
+  await wait(1100);
   void startCycle();
 }
 
@@ -558,53 +560,33 @@ async function awardSticker(): Promise<void> {
 
 async function rosvotToCar(): Promise<void> {
   const sprites: Sprite[] = [];
+  const out = { x: DOOR.x + 30, y: DOOR.y + 24 };
   for (let i = 0; i < 3; i++) {
-    const e = el('rosvo actor caught released');
-    e.innerHTML = `<div class="actor-inner">${rosvoSvg(state.costumes[i])}</div>`;
-    const s = new Sprite(e, 60, 200);
-    s.scale = 0.6;
-    s.at(DOOR.x, DOOR.y).show(false);
+    const s = makeActor('rosvo caught released', `<div class="actor-inner">${rosvoSvg(state.costumes[i])}</div>`);
+    stand(s, out).show(false);
     sprites.push(s);
   }
-  // Out of the jail, one by one.
   for (let i = 0; i < 3; i++) {
     scene.windows[i].face.classList.remove('on');
     const s = sprites[i];
     s.show(true);
-    s.el.classList.add('walking');
-    void tween(700, (t) => {
-      s.scale = 0.6 + 0.4 * t;
-      s.render();
-    });
-    void s.moveTo(380 + i * 120, 740, 900, 20).then(() => s.el.classList.remove('walking'));
-    await wait(300);
+    void walkTo(s, { x: 340 + i * 110, y: 640 }, { speed: 260 });
+    await wait(350);
   }
-  await wait(800);
-  // Sorry!
+  await wait(1200);
   sfx.sorry();
   for (const s of sprites) {
     s.el.classList.add('bow');
-    hearts(scene, { x: s.x, y: s.y - 210 });
+    hearts(scene, { x: s.x, y: s.y - 210 * s.scale });
   }
   await wait(1500);
-  // Hop into the back of the police car.
   const riders = scene.car.querySelector('.riders') as SVGGElement;
   riders.setAttribute('class', 'riders sorry');
   riders.innerHTML = '';
   for (let i = 0; i < 3; i++) {
     const s = sprites[i];
     s.el.classList.remove('bow');
-    s.flip = true;
-    const x0 = s.x;
-    const y0 = s.y;
-    const tx = CAR.x + 95;
-    const ty = CAR.y + 70;
-    await tween(450, (t) => {
-      s.x = x0 + (tx - x0) * t;
-      s.y = y0 + (ty - y0) * t - Math.sin(Math.PI * t) * 90;
-      s.scale = 1 - 0.65 * t;
-      s.render();
-    });
+    await walkTo(s, { x: CAR.x + 110, y: CAR.y + 130 }, { hop: 70, speed: 500 });
     s.el.remove();
     riders.insertAdjacentHTML('beforeend', `<g transform="translate(${56 + i * 18} 28) scale(.32)">${rosvoHead(state.costumes[i])}</g>`);
     sfx.pickup();
@@ -612,32 +594,21 @@ async function rosvotToCar(): Promise<void> {
   await wait(300);
 }
 
-async function driveAway(): Promise<void> {
-  const car = scene.carSprite;
-  sfx.siren();
-  scene.car.classList.add('driving');
-  await car.moveTo(1350, CAR.y, 2600, 0, (t) => t * t);
-  (scene.car.querySelector('.riders') as SVGGElement).innerHTML = '';
-  car.at(-320, CAR.y);
-  await wait(400);
-  await car.moveTo(CAR.x, CAR.y, 1500, 0, ease.out);
-  scene.car.classList.remove('driving');
-}
-
 // ---------- Hints ----------
 
 export function hintFor(): void {
   if (state.busy || state.drag || state.panelOpen || state.moving) return;
   if (state.phase === 'hiding') {
-    const pf = peekFeet(SPOTS[state.spot]);
-    showHint(scene, { type: 'tap', at: { x: pf.x + 10, y: pf.y - 200 + PEEK_H / 2 } });
+    const s = SPOTS[state.spot];
+    const pf = peekFeet(s);
+    showHint(scene, { type: 'tap', at: { x: pf.x + 10, y: pf.y - 200 * s.s + peekH(s) / 2 } });
+    peekerView().peeker.style.setProperty('--off', '0px');
     peekerView().peeker.classList.add('up');
   } else if (state.phase === 'caught') {
-    showHint(scene, { type: 'drag', from: { x: rosvo.x, y: rosvo.y - 100 }, to: JAIL_TARGET });
+    showHint(scene, { type: 'drag', from: rosvoCentre(), to: JAIL_TARGET });
   } else if (state.phase === 'returning') {
-    const [hx, hy] = handPos(victim());
-    const it = victimView().item;
-    showHint(scene, { type: 'drag', from: state.itemOut ? { x: it.x, y: it.y } : stashPoint(), to: { x: hx, y: hy } });
+    const it = view(victim()).item;
+    showHint(scene, { type: 'drag', from: state.itemOut ? { x: it.x, y: it.y } : stashPoint(), to: handPos(victim()) });
   } else return;
   state.hintOn = true;
   sfx.hint();
@@ -645,13 +616,16 @@ export function hintFor(): void {
 
 /** Debug/test hook: logical positions of the current targets. */
 export function targets(): Record<string, Pt | null> {
-  const ov = ownerViews[state.victim];
-  const pf = peekFeet(SPOTS[state.spot]);
+  const o = ownerById(state.victim);
+  const s = SPOTS[state.spot];
+  const pf = peekFeet(s);
   const hidden = state.phase === 'hiding' && !state.moving;
+  const item = o ? view(o).item : null;
   return {
-    rosvo: hidden ? { x: pf.x, y: pf.y - 200 + PEEK_H / 2 } : { x: rosvo.x, y: rosvo.y - 100 },
+    rosvo: hidden ? { x: pf.x, y: pf.y - 200 * s.s + peekH(s) / 2 } : rosvoCentre(),
     jail: JAIL_TARGET,
-    item: !ov ? null : state.itemOut || state.stashSpot < 0 ? { x: ov.item.x, y: ov.item.y } : stashPoint(),
-    owner: ov ? { x: ov.sprite.x, y: ov.sprite.y - 100 } : null,
+    item: !item ? null : state.itemOut || state.stashSpot < 0 ? { x: item.x, y: item.y } : stashPoint(),
+    owner: o ? { x: o.pos.x, y: o.pos.y - 100 * depth(o.pos.y) } : null,
+    officer: { x: officer.x, y: officer.y - 100 * officer.scale },
   };
 }

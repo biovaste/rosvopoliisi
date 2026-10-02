@@ -58,28 +58,57 @@ svg {
   left: -1200px;
   top: -1200px;
   width: 3600px;
-  height: 1670px;
-  background: linear-gradient(#5fb4ea 0%, #7ec8f0 75%, #c8ecff 100%);
-}
-.stage > .ground {
-  left: -1200px;
-  top: 470px;
-  width: 3600px;
   height: 1600px;
-  background: #8bc34a;
+  z-index: 0;
+  transition: opacity 1.8s ease;
 }
-.stage > .road {
+.sky.day {
+  background: linear-gradient(#56aee6 60%, #8fd0f2 85%, #d4f0ff 100%);
+}
+.sky.evening {
+  background: linear-gradient(#5a5fa8 55%, #f39a6b 85%, #ffd59a 100%);
+  opacity: 0;
+}
+.sky.night {
+  background: linear-gradient(#0f1640 55%, #24306e 85%, #3b4a8a 100%);
+  opacity: 0;
+}
+body[data-time='evening'] .sky.evening,
+body[data-time='night'] .sky.night {
+  opacity: 1;
+}
+.stage > .ground-ext {
   left: -1200px;
-  top: 470px;
+  top: 790px;
   width: 3600px;
-  height: 44px;
-  background: #e8dcc4;
-  border-top: 5px solid #2b2b3a;
-  border-bottom: 5px solid #c8b896;
+  height: 1200px;
+  background: #7cc35a;
+  z-index: 1;
+}
+.backdrop svg {
+  overflow: visible;
 }
 
 .skybits {
   z-index: 1;
+}
+.stage > .backdrop::before {
+  content: '';
+  position: absolute;
+  left: -1200px;
+  top: 300px;
+  width: 1200px;
+  height: 600px;
+  background: #8cc96b;
+}
+.stage > .backdrop::after {
+  content: '';
+  position: absolute;
+  left: 1200px;
+  top: 300px;
+  width: 1200px;
+  height: 600px;
+  background: #8cc96b;
 }
 .skybits > div {
   position: absolute;
@@ -136,19 +165,18 @@ svg {
 
 .tint {
   left: -1200px !important;
-  top: -1200px !important;
+  top: 120px !important;
   width: 3600px;
-  height: 3200px;
-  z-index: 6;
+  height: 2000px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 1.8s ease;
 }
 .tint.evening {
-  background: rgba(255, 112, 67, 0.26);
+  background: linear-gradient(rgba(255, 120, 70, 0) 0, rgba(255, 120, 70, 0.22) 160px);
 }
 .tint.night {
-  background: rgba(16, 26, 84, 0.46);
+  background: linear-gradient(rgba(16, 26, 84, 0) 0, rgba(16, 26, 84, 0.42) 160px);
 }
 
 body[data-time='evening'] .tint.evening,
@@ -180,9 +208,6 @@ body[data-time='evening'] .lamp .glow,
 body[data-time='night'] .lamp .glow {
   opacity: 1;
 }
-.lamp {
-  z-index: 8 !important;
-}
 
 /* ---------- Hiding spots ---------- */
 
@@ -191,18 +216,19 @@ body[data-time='night'] .lamp .glow {
 }
 .peeker {
   position: absolute;
-  left: 5px;
+  left: 0;
   top: 0;
   width: 120px;
   height: 200px;
-  transform: translate3d(0, 175px, 0);
+  transform-origin: 0 0;
+  transform: translate3d(calc(5px * var(--s)), calc(185px * var(--s)), 0) scale(var(--s));
   transition: transform 0.28s cubic-bezier(0.3, 1.3, 0.6, 1);
 }
 .peeker:not(.active) {
   visibility: hidden;
 }
 .peeker.up {
-  transform: translate3d(0, 0, 0);
+  transform: translate3d(calc(5px * var(--s)), calc(var(--off, 0px) * var(--s)), 0) scale(var(--s));
 }
 .peeker-inner {
   transform-origin: 50% 70%;
@@ -912,5 +938,81 @@ body[data-phase='returning'] .item.glow .actor-inner {
   }
   50% {
     transform: rotate(3deg);
+  }
+}
+
+/* ---------- Police, handcuffs, escort ---------- */
+
+.arms-cuffed,
+.arm-escort {
+  opacity: 0;
+}
+.cuffed .arms-cuffed,
+.escorting .arm-escort {
+  opacity: 1;
+}
+.cuffed .arms-up,
+.cuffed .arms-down,
+.escorting .arm-rest {
+  opacity: 0;
+}
+.cuffed .eyes-sorry {
+  opacity: 1;
+}
+.cuffed .eyes-sly {
+  opacity: 0;
+}
+.officer {
+  width: 120px;
+  height: 200px;
+}
+.car .driver {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.car.driver-in .driver {
+  opacity: 1;
+}
+.stash {
+  transform-origin: 0 0;
+}
+.stash.twinkle::after {
+  content: '';
+  position: absolute;
+  left: 70px;
+  top: -10px;
+  width: 22px;
+  height: 22px;
+  background: radial-gradient(circle, #fff 0 30%, rgba(255, 255, 255, 0) 70%);
+  animation: twinkle 0.9s ease-in-out infinite alternate;
+}
+
+/* ---------- Town life ---------- */
+
+.puff {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: puff 3.6s ease-out infinite;
+}
+.puff.p1 {
+  animation-delay: 1.2s;
+}
+.puff.p2 {
+  animation-delay: 2.4s;
+}
+.blades {
+  animation: spin 9s linear infinite;
+}
+.beacon {
+  animation: twinkle 1.2s ease-in-out infinite alternate;
+}
+@keyframes puff {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(16px, -60px) scale(1.8);
+    opacity: 0;
   }
 }
