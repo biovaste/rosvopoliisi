@@ -2,8 +2,9 @@
 // z-index is the y of its bottom edge, so nearer things are drawn on top.
 
 import * as art from './art';
-import { backdropSvg, buildingSvg, chimneySpotSvg, stationSvg, treeSvg } from './buildings';
-import { BASE_Y, CAR, H, SHELF, SLOT_X, SPOTS, STATION, W, WINDOWS, buildingTop, peekH, peekW, type SpotDef } from './layout';
+import { backdropSvg, chimneySpotSvg, treeSvg } from './buildings';
+import { SKY, TILES } from './images';
+import { BASE_Y, CAR, CELLS, H, SHELF, SPOTS, STATION, W, peekH, peekW, placeBuilding, type Placed, type SpotDef } from './layout';
 import { policeHead } from './people';
 import { town } from './town';
 import { Sprite } from './tween';
@@ -49,6 +50,17 @@ function place(el: HTMLElement, x: number, y: number, z: number): HTMLElement {
   return el;
 }
 
+function picture(stage: HTMLElement, p: Placed, z: number): void {
+  const img = document.createElement('img');
+  img.className = 'prop building';
+  img.src = p.art.url;
+  img.width = p.art.w;
+  img.height = p.art.h;
+  img.alt = '';
+  stage.appendChild(img);
+  place(img, p.x, p.y, z);
+}
+
 function spotObject(def: SpotDef): string {
   switch (def.kind) {
     case 'chimney':
@@ -87,6 +99,25 @@ export function buildScene(app: HTMLElement): Scene {
   div('sky evening', stage);
   div('sky night', stage);
   div('ground-ext', stage);
+  // Painted sky panoramas, cross-faded by time of day. Without a dedicated
+  // evening/night picture the day one is shown with a colour filter.
+  const skyArt = div('sky-art', stage);
+  stage.classList.toggle('art-sky', !!SKY.day);
+  stage.classList.toggle('art-evening', !!SKY.evening);
+  stage.classList.toggle('art-night', !!SKY.night);
+  if (SKY.day) {
+    for (const t of ['day', 'evening', 'night'] as const) {
+      const art = SKY[t] ?? SKY.day;
+      const img = document.createElement('img');
+      img.className = `sky-img ${t}${SKY[t] ? '' : ' filtered'}`;
+      img.src = art.url;
+      img.width = art.w;
+      img.height = art.h;
+      img.style.transform = `translate3d(${(W - art.w) / 2}px,0,0)`;
+      img.alt = '';
+      skyArt.appendChild(img);
+    }
+  }
   const sky = div('skybits', stage);
   div('sun', sky, `<svg viewBox="0 0 120 120" width="120" height="120"><circle cx="60" cy="60" r="44" fill="#ffd54f" stroke="#f9a825" stroke-width="6"/></svg>`);
   div('moon', sky, `<svg viewBox="0 0 120 120" width="120" height="120"><path d="M70 18 A42 42 0 1 0 100 82 A34 34 0 1 1 70 18Z" fill="#fff9c4" stroke="#f9e79f" stroke-width="3"/></svg>`);
@@ -107,24 +138,22 @@ export function buildScene(app: HTMLElement): Scene {
     );
   }
 
-  place(div('prop backdrop', stage, backdropSvg()), 0, 0, 2);
+  place(div('prop backdrop', stage, backdropSvg(TILES)), 0, 0, 2);
 
-  // Police station with jail cells.
-  place(div('prop', stage, stationSvg()), STATION.x, STATION.y, BASE_Y);
-  const windows: WindowView[] = WINDOWS.map((p) => {
-    const w = place(div('jailwin', stage), p.x - 38, p.y - 45, BASE_Y + 1);
+  // Police station with jail cells; the cell windows are layered over the picture.
+  picture(stage, STATION, BASE_Y);
+  const windows: WindowView[] = CELLS.map((c) => {
+    const w = place(div('jailwin', stage), c.x, c.y, BASE_Y + 1);
+    w.style.width = `${c.w}px`;
+    w.style.height = `${c.h}px`;
     div('jw-back', w, art.jailWindowBack());
     const face = div('jw-face', w);
     div('jw-bars', w, art.jailWindowBars());
     return { face };
   });
 
-  // The building row. A chimney that is a hiding spot is drawn separately, behind its building.
-  const chimneyXs = SPOTS.filter((s) => s.kind === 'chimney').map((s) => s.x);
-  town.buildings.forEach((b, i) => {
-    const hasSpot = chimneyXs.some((x) => x > SLOT_X[i] && x < SLOT_X[i] + 180);
-    place(div('prop', stage, buildingSvg(b, hasSpot)), SLOT_X[i] - 12, buildingTop(b.kind) - 40, BASE_Y - (i === 3 ? 1 : 0));
-  });
+  // The building row.
+  town.buildings.forEach((b, i) => picture(stage, placeBuilding(b.kind, i), BASE_Y - (i === 3 ? 1 : 0)));
 
   // Street furniture.
   place(div('prop lamp', stage, art.lampSvg()), 506, 244, 502);

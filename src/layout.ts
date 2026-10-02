@@ -1,7 +1,8 @@
 // Logical scene coordinates. The stage is 1200x800 and is scaled to fit the screen.
 // Things further up the screen are further away and drawn smaller (see depth()).
 
-import { buildingGeom, type BuildingKind } from './buildings';
+import type { BuildingKind } from './buildings';
+import { BUILDING_ART, roofAt, type BuildingArt } from './images';
 import { town } from './town';
 
 export const W = 1200;
@@ -23,31 +24,41 @@ export const BASE_Y = 470;
 
 // ---------- Buildings ----------
 
-export const SLOT_X = [345, 705, 890, 1070];
+/** Centre x of the four building slots (left to right). */
+export const SLOT_CX = [445, 790, 985, 1170];
 
-const DOOR_X: Record<BuildingKind, number> = { home: 90, bakery: 135, bank: 90, jewelry: 136 };
+export interface Placed {
+  art: BuildingArt;
+  x: number;
+  y: number;
+}
 
-export function buildingTop(kind: BuildingKind): number {
-  return BASE_Y - buildingGeom(kind).h;
+/** Where a building's picture is drawn (top-left) in its slot. */
+export function placeBuilding(kind: BuildingKind, slot: number): Placed {
+  const art = BUILDING_ART[kind];
+  return { art, x: SLOT_CX[slot] - art.w / 2, y: BASE_Y - art.h };
 }
 
 /** Feet position at a building's door. */
 export function doorOf(kind: BuildingKind): Pt {
   const i = town.buildings.findIndex((b) => b.kind === kind);
-  return { x: SLOT_X[i] + DOOR_X[kind], y: 500 };
+  const p = placeBuilding(kind, i);
+  return { x: p.x + p.art.door * p.art.w, y: 500 };
 }
 
 // ---------- Police station ----------
 
-export const STATION = { x: 20, y: BASE_Y - 270 };
-export const DOOR: Pt = { x: 180, y: 472 };
-/** Cell window centres. */
-export const WINDOWS: Pt[] = [90, 180, 270].map((x) => ({ x, y: STATION.y + 141 }));
+const stationArt = BUILDING_ART.station;
+export const STATION: Placed = { art: stationArt, x: 15, y: BASE_Y - stationArt.h };
+export const DOOR: Pt = { x: STATION.x + stationArt.door * stationArt.w, y: 472 };
+/** Jail cell windows (rects in scene coordinates). */
+export const CELLS = (stationArt.cells ?? []).map((c) => ({ x: STATION.x + c.x, y: STATION.y + c.y, w: c.w, h: c.h }));
+export const WINDOWS: Pt[] = CELLS.map((c) => ({ x: c.x + c.w / 2, y: c.y + c.h / 2 }));
 /** Police car, top-left corner of its 260x140 drawing (wheels on the street). */
 export const CAR = { x: 40, y: 451 };
 export const OFFICER_IDLE: Pt = { x: 336, y: 600 };
 export const JAIL_TARGET: Pt = { x: 180, y: 400 };
-export const JAIL_RADIUS = 240;
+export const JAIL_RADIUS = 220;
 export const OWNER_RADIUS = 160;
 
 // ---------- Hiding spots ----------
@@ -86,20 +97,21 @@ function spot(kind: SpotKind, use: SpotUse, x: number, bottom: number, w: number
   const top = bottom - h;
   const far = bottom < 600;
   const landY = far ? 640 : clamp(bottom + 6, 640, 796);
-  return { kind, use, x, top, w, h, clip, s: depth(far ? 470 : bottom - 10), z, far, land: { x: clamp(x, 300, 1100), y: landY }, os };
+  return { kind, use, x, top, w, h, clip, s: depth(far ? 470 : bottom - 10), z, far, land: { x: clamp(x, 420, 1100), y: landY }, os };
 }
 
 function chimneySpots(): SpotDef[] {
   const out: SpotDef[] = [];
   town.buildings.forEach((b, i) => {
-    const g = buildingGeom(b.kind);
-    if (!g.chimney || i === 3) return;
-    const x = SLOT_X[i] + g.chimney.x;
-    const top = buildingTop(b.kind) + g.chimney.top - 4;
+    if (i === 3 || (b.kind !== 'home' && b.kind !== 'bakery')) return;
+    const p = placeBuilding(b.kind, i);
+    const rx = p.art.w * 0.7;
+    const top = p.y + roofAt(p.art, rx) - 50;
+    const x = p.x + rx;
     const s = spot('chimney', 'both', x, top + 80, 60, 80, 12, 300);
     s.s = 0.56;
     s.far = true;
-    s.land = { x: clamp(x, 300, 1100), y: 640 };
+    s.land = { x: clamp(x, 420, 1100), y: 640 };
     out.push(s);
   });
   return out;
@@ -107,7 +119,7 @@ function chimneySpots(): SpotDef[] {
 
 const backTree = spot('tree', 'both', 887, 460, 200, 300, 40, 290);
 backTree.s = 0.55;
-const roof = spot('roof', 'rosvo', 250, STATION.y + 30, 0, 0, 8, 299);
+const roof = spot('roof', 'rosvo', STATION.x + 70, STATION.y + roofAt(stationArt, 55) + 10, 0, 0, 8, 299);
 roof.s = 0.58;
 roof.far = true;
 

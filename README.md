@@ -73,6 +73,27 @@ If the tablet can't connect, allow Node through the computer's firewall.
 Hold the small lock button in the top-left corner for 3 seconds to open the
 panel with the mute and fullscreen buttons.
 
+## Artwork
+
+The sky, buildings and ground textures are AI-generated images. Characters,
+hiding objects, items and the car are drawn in code, because they animate,
+change colours and hide a peeking rosvo.
+
+The original images are in `art-src/`. `tools/prepare_art.py` turns them into
+small WebP files in `src/assets/art/`, about 350 KB in total. It also writes
+`src/art-meta.json` with sizes, roof lines (where the chimney hiding spots go),
+door positions and the jail-cell windows:
+
+```sh
+pip install pillow numpy
+python3 tools/prepare_art.py
+```
+
+Art that hasn't been made yet falls back automatically: the code-drawn
+street, or the day sky with a colour filter for evening and night. To add a
+missing picture, save it as `art-src/sky-evening.jpg`,
+`art-src/sky-night.jpg` or `art-src/tile-street.jpg` and run the script.
+
 ## End-to-end test
 
 ```sh
@@ -91,7 +112,8 @@ error. It needs Playwright's Chromium (`npx playwright install chromium`).
 - `src/state.ts`: the single game-state object and its phases
 - `src/game.ts`: the steal / catch / escort / return / celebrate loop and difficulty tiers
 - `src/scene.ts`: builds the depth-sorted town
-- `src/buildings.ts`, `src/draw.ts`: hand-drawn buildings, backdrop and trees
+- `src/images.ts`, `tools/prepare_art.py`: generated artwork and its metadata
+- `src/buildings.ts`, `src/draw.ts`: code-drawn chimneys, trees and the ground layer
 - `src/npcs.ts`: townspeople spawning, strolling and coming and going
 - `src/police.ts`: the officer (cuffing, escorting, driving)
 - `src/actors.ts`: depth-scaled walking for characters

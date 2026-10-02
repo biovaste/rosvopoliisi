@@ -99,19 +99,17 @@ export function itemSvg(kind: ItemKind): string {
 // ---------- Scenery props ----------
 
 
-/** A barred jail window, viewBox 0 0 76 90. Face layer sits behind the bars. */
+/** Jail cell window drawn over the station picture: dark back, face layer, bars. */
 export function jailWindowBack(): string {
-  return `<svg viewBox="0 0 76 90" width="76" height="90"><rect x="2" y="2" width="72" height="86" rx="10" fill="#1f2d4d" stroke="${OUT}" stroke-width="4"/></svg>`;
+  return `<svg viewBox="0 0 76 90" preserveAspectRatio="none"><rect x="0" y="0" width="76" height="90" fill="#35343c"/></svg>`;
 }
 export function jailWindowBars(): string {
-  return `<svg viewBox="0 0 76 90" width="76" height="90">
-    <path d="M20 4 V86 M38 4 V86 M56 4 V86" stroke="#9aa5b8" stroke-width="6" stroke-linecap="round"/>
-    <path d="M20 4 V86 M38 4 V86 M56 4 V86" stroke="${OUT}" stroke-width="2" opacity=".4"/>
-    <rect x="2" y="2" width="72" height="86" rx="10" fill="none" stroke="${OUT}" stroke-width="5"/>
+  return `<svg viewBox="0 0 76 90" preserveAspectRatio="none">
+    ${[8, 22, 38, 54, 68].map((x) => `<path d="M${x} 0 V90" stroke="${OUT}" stroke-width="7"/><path d="M${x} 0 V90" stroke="#8d8f9c" stroke-width="3.5"/>`).join('')}
+    <rect x="1.5" y="1.5" width="73" height="87" fill="none" stroke="${OUT}" stroke-width="3"/>
   </svg>`;
 }
 
-/** Police car facing right. Driver and passenger heads sit behind the windows. */
 export function carSvg(driverHead: string): string {
   const wheel = (cx: number) => `<g class="wheel" style="transform-origin:${cx}px 112px">
       <circle cx="${cx}" cy="112" r="22" fill="${OUT}"/><circle cx="${cx}" cy="112" r="10" fill="#cfd8dc"/>

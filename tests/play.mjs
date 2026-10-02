@@ -121,7 +121,7 @@ for (let cycle = 0; cycle < 2; cycle++) {
         await tap((await tg()).rosvo);
         await sleep(400);
         s = await st();
-        if (s.phase !== 'hiding' || tries >= 6) break;
+        if (s.phase !== 'hiding' || s.busy || tries >= 6) break;
       }
       s = await waitFor((s) => s.phase === 'caught' && !s.busy, 'caught');
       check(true, 'rosvo caught');

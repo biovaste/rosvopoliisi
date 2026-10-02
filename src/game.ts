@@ -356,7 +356,7 @@ async function catchRosvo(from: Pt, onTheRun: boolean): Promise<void> {
   rosvo.scale = SPOTS[state.spot].s;
   rosvo.render();
   sparkle(scene, { x: from.x, y: from.y - 150 * rosvo.scale });
-  const land = onTheRun ? { x: clamp(from.x, 300, 1100), y: clamp(from.y, 640, 790) } : SPOTS[state.spot].land;
+  const land = onTheRun ? { x: clamp(from.x, 420, 1100), y: clamp(from.y, 640, 790) } : SPOTS[state.spot].land;
   await walkTo(rosvo, land, { hop: 110, speed: 700, ease: ease.inOut });
   rosvo.flip = false;
   rosvo.render();

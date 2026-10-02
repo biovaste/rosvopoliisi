@@ -65,6 +65,9 @@ svg {
 .sky.day {
   background: linear-gradient(#56aee6 60%, #8fd0f2 85%, #d4f0ff 100%);
 }
+.art-sky > .sky.day {
+  background: #79c5f5;
+}
 .sky.evening {
   background: linear-gradient(#5a5fa8 55%, #f39a6b 85%, #ffd59a 100%);
   opacity: 0;
@@ -82,7 +85,7 @@ body[data-time='night'] .sky.night {
   top: 790px;
   width: 3600px;
   height: 1200px;
-  background: #7cc35a;
+  background: #80a947;
   z-index: 1;
 }
 .backdrop svg {
@@ -1015,4 +1018,66 @@ body[data-phase='returning'] .item.glow .actor-inner {
     transform: translate(16px, -60px) scale(1.8);
     opacity: 0;
   }
+}
+
+/* ---------- Painted art ---------- */
+
+.stage > .sky-art {
+  z-index: 1;
+}
+.sky-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transition: opacity 1.8s ease;
+}
+.sky-img.evening,
+.sky-img.night {
+  opacity: 0;
+}
+body[data-time='evening'] .sky-img.evening,
+body[data-time='night'] .sky-img.night {
+  opacity: 1;
+}
+.sky-img.evening.filtered {
+  filter: sepia(0.35) saturate(1.3) hue-rotate(-18deg) brightness(0.95);
+}
+.sky-img.night.filtered {
+  filter: brightness(0.42) saturate(0.9) hue-rotate(12deg);
+}
+/* The painted sky has its own clouds, sun glow, moon and stars. */
+.art-sky .clouds,
+.art-sky .sun {
+  display: none;
+}
+.art-sky:not(.art-evening) .sun {
+  display: block;
+}
+body[data-time='day'] .art-sky .sun {
+  opacity: 0;
+}
+.art-night .moon,
+.art-night .stars {
+  display: none;
+}
+.stage > img.building {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  pointer-events: none;
+}
+.jailwin > div,
+.jailwin svg {
+  width: 100%;
+  height: 100%;
+}
+.jailwin .jw-face svg {
+  height: auto;
+}
+.jailwin .jw-face {
+  transform: translate3d(0, 14px, 0) scale(0.4);
+}
+.jailwin .jw-face.on {
+  transform: translate3d(0, 8px, 0) scale(1);
 }
