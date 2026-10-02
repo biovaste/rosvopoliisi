@@ -1,5 +1,6 @@
 import './style.css';
-import { playButtonSvg, rosvoHead, randomCostume, rotateSvg } from './art';
+import { playButtonSvg, rotateSvg } from './art';
+import { randomCostumes, rosvoHead } from './people';
 import { sfx, unlockAudio } from './audio';
 import { updateHint } from './fx';
 import { begin, hintFor, initGame, onDown, onMove, onUp, targets } from './game';
@@ -25,7 +26,7 @@ const toLogical = (e: PointerEvent) => ({ x: (e.clientX - view.ox) / view.scale,
 
 const start = document.createElement('div');
 start.className = 'start';
-start.innerHTML = `<div class="start-peek"><svg viewBox="0 0 120 100" width="180" height="150">${rosvoHead(randomCostume())}</svg></div>
+start.innerHTML = `<div class="start-peek"><svg viewBox="0 0 120 100" width="180" height="150">${rosvoHead(randomCostumes(1)[0])}</svg></div>
   <div class="play">${playButtonSvg()}</div>`;
 app.appendChild(start);
 
@@ -94,7 +95,7 @@ requestAnimationFrame(frame);
 const toClient = (p: { x: number; y: number } | null) =>
   p ? { x: p.x * view.scale + view.ox, y: p.y * view.scale + view.oy } : null;
 (window as unknown as { __rosvo: unknown }).__rosvo = {
-  state: () => ({ phase: state.phase, busy: state.busy, jailed: state.jailed, cycle: state.cycle, time: state.time, stickers: state.stickers, misses: state.misses, still: state.still, hint: state.hintOn }),
+  state: () => ({ phase: state.phase, busy: state.busy, jailed: state.jailed, cycle: state.cycle, time: state.time, stickers: state.stickers, misses: state.misses, still: state.still, hint: state.hintOn, moving: state.moving, itemOut: state.itemOut }),
   targets: () => {
     const t = targets();
     return Object.fromEntries(Object.entries(t).map(([k, v]) => [k, toClient(v)]));

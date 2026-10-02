@@ -14,10 +14,11 @@ export const ease = {
 };
 
 /** Runs fn(t) for t in [0,1] over `ms`, resolving when done. */
-export function tween(ms: number, fn: (t: number) => void, e: Ease = ease.inOut): Promise<void> {
+export function tween(ms: number, fn: (t: number) => void, e: Ease = ease.inOut, alive?: () => boolean): Promise<void> {
   return new Promise((resolve) => {
     const start = performance.now();
     const step = (now: number) => {
+      if (alive && !alive()) return resolve();
       const raw = Math.min(1, (now - start) / ms);
       fn(e(raw));
       if (raw < 1) requestAnimationFrame(step);
@@ -63,7 +64,7 @@ export class Sprite {
   }
 
   /** Move to (x,y) over ms with an optional hop height. */
-  moveTo(x: number, y: number, ms: number, hop = 0, e: Ease = ease.inOut): Promise<void> {
+  moveTo(x: number, y: number, ms: number, hop = 0, e: Ease = ease.inOut, alive?: () => boolean): Promise<void> {
     const x0 = this.x;
     const y0 = this.y;
     return tween(
@@ -74,6 +75,7 @@ export class Sprite {
         this.render();
       },
       e,
+      alive,
     );
   }
 }

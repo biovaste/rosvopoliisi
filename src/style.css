@@ -387,8 +387,8 @@ body[data-phase='caught'] .rosvo.caught:not(.released) .actor-inner {
   width: 104px;
   height: 92px;
   border-radius: 46px;
-  background: #fff;
-  border: 5px solid #2b2b3a;
+  background: rgba(255, 255, 255, 0.55);
+  border: 5px dashed rgba(43, 43, 58, 0.7);
   opacity: 0;
   transform: scale(0.3);
   transform-origin: 10% 100%;
@@ -402,8 +402,16 @@ body[data-phase='caught'] .rosvo.caught:not(.released) .actor-inner {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #fff;
-  border: 4px solid #2b2b3a;
+  background: rgba(255, 255, 255, 0.55);
+  border: 4px solid rgba(43, 43, 58, 0.7);
+}
+.bubble.left {
+  left: -62px;
+  transform-origin: 90% 100%;
+}
+.bubble.left::after {
+  left: auto;
+  right: 6px;
 }
 .bubble.on {
   opacity: 1;
@@ -414,6 +422,7 @@ body[data-phase='caught'] .rosvo.caught:not(.released) .actor-inner {
   left: 2px;
   top: -4px;
   transform: scale(0.88);
+  opacity: 0.45;
 }
 .bubble.on .bubble-inner {
   animation: pulse 1.2s ease-in-out infinite;
@@ -826,5 +835,82 @@ body[data-phase='returning'] .item.glow .actor-inner {
   }
   100% {
     transform: rotate(0deg);
+  }
+}
+
+/* ---------- Additions: stashes, blinking, car driving ---------- */
+
+.stash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100px;
+  height: 100px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.stash.on {
+  opacity: 1;
+}
+.stash > svg {
+  transform-origin: 50% 100%;
+  animation: stashwobble 2.4s ease-in-out infinite;
+}
+.stash.glow > svg {
+  animation: invite 0.9s ease-in-out infinite;
+}
+.stash::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: -20px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 245, 157, 0.95) 0%, rgba(255, 245, 157, 0) 65%);
+  opacity: 0;
+}
+.stash.glow::before {
+  animation: glow 1s ease-in-out infinite alternate;
+}
+.stash.nudge > svg {
+  animation: shake 0.4s ease-in-out;
+}
+
+.blink {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: blinkeye 4.2s infinite;
+}
+
+.car.driving .wheel {
+  animation: spin 0.35s linear infinite;
+}
+.car.driving > svg {
+  animation: carbounce 0.18s ease-in-out infinite alternate;
+}
+
+@keyframes blinkeye {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes stashwobble {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
   }
 }

@@ -2,6 +2,8 @@
 
 import * as art from './art';
 import { CAR, H, PEEK_H, PEEK_W, SHELF, SPOTS, STATION, W, WINDOWS, type SpotDef } from './layout';
+import { policeHead } from './people';
+import { town } from './town';
 import { Sprite } from './tween';
 
 export interface SpotView {
@@ -9,6 +11,8 @@ export interface SpotView {
   box: HTMLElement;
   peeker: HTMLElement;
   inner: HTMLElement;
+  /** Holds the stolen item poking out of this spot. */
+  stash: HTMLElement;
 }
 
 export interface WindowView {
@@ -21,6 +25,7 @@ export interface Scene {
   spots: SpotView[];
   windows: WindowView[];
   car: HTMLElement;
+  carSprite: Sprite;
   actors: HTMLElement;
   fx: HTMLElement;
   shelf: HTMLElement;
@@ -73,32 +78,43 @@ export function buildScene(app: HTMLElement): Scene {
 
   // Background buildings.
   place(div('prop', stage, art.stationSvg()), STATION.x, STATION.y, 4);
-  place(div('prop', stage, art.houseSvg('#ffe0b2', '#e57373', '#8d6e63', bakerySign())), 330, 250, 4);
-  place(div('prop', stage, art.houseSvg('#c8e6c9', '#7986cb', '#5d4037')), 710, 250, 4);
-  place(div('prop small-house', stage, art.houseSvg('#fff3e0', '#ffb74d', '#6d4c41')), 980, 290, 3);
+  place(div('prop', stage, art.hillsSvg()), -200, 290, 1);
+  const [b0, b1, b2] = town.buildings;
+  place(div('prop', stage, art.buildingSvg(b0)), 330, 250, 4);
+  place(div('prop', stage, art.buildingSvg(b1)), 710, 250, 4);
+  place(div('prop small-house', stage, art.buildingSvg(b2)), 980, 290, 3);
+  if (town.fence) {
+    place(div('prop', stage, art.fenceSvg(150)), 556, 432, 5);
+    place(div('prop', stage, art.fenceSvg(52)), 930, 432, 5);
+  }
+  for (const f of town.flowers) place(div('prop', stage, art.flowersSvg(f.colors)), f.x - 60, 500, 5);
   place(div('prop lamp', stage, art.lampSvg()), 300, 380, 4);
   place(div('prop lamp', stage, art.lampSvg()), 1140, 380, 4);
 
   // Hiding spots.
-  const spots: SpotView[] = SPOTS.map((def) => {
+  const spots: SpotView[] = SPOTS.map((def, i) => {
     const zBox = def.back ? 2 : 9;
     const box = place(div('peekbox', stage), def.x - PEEK_W / 2, def.top + def.clip - PEEK_H, zBox);
     box.style.width = `${PEEK_W}px`;
     box.style.height = `${PEEK_H}px`;
     const peeker = div('peeker', box);
     const inner = div('peeker-inner', peeker);
+    const stash = div('stash', box);
+    stash.style.transform = `translate3d(${(PEEK_W - 100) / 2}px,${PEEK_H - def.clip - 70}px,0)`;
     const objHtml =
       def.kind === 'tree'
-        ? art.treeSvg()
+        ? art.treeSvg(town.tree)
         : def.kind === 'bush'
-          ? art.bushSvg(def.x > 800 ? '#43a047' : '#66bb6a')
+          ? art.bushSvg(town.bushColors[i % town.bushColors.length])
           : def.kind === 'bin'
             ? art.binSvg()
             : def.kind === 'crate'
               ? art.crateSvg()
-              : chimneySvg();
+              : def.kind === 'barrel'
+                ? art.barrelSvg()
+                : chimneySvg();
     place(div(`prop spot-obj ${def.kind}`, stage, objHtml), def.x - def.w / 2, def.top, zBox + 1);
-    return { def, box, peeker, inner };
+    return { def, box, peeker, inner, stash };
   });
 
   // Jail windows.
@@ -114,8 +130,10 @@ export function buildScene(app: HTMLElement): Scene {
   div('tint evening', stage);
   div('tint night', stage);
 
-  const car = place(div('prop car', stage, art.carSvg()), CAR.x, CAR.y, 7);
+  const car = div('prop car', stage, art.carSvg(policeHead(town.police)));
+  car.style.zIndex = '7';
   div('car-lights', car, art.carLights());
+  const carSprite = new Sprite(car, 0, 0).at(CAR.x, CAR.y);
 
   const actors = div('actors', stage);
   actors.style.zIndex = '12';
@@ -133,7 +151,7 @@ export function buildScene(app: HTMLElement): Scene {
   handEl.style.zIndex = '25';
   const hand = new Sprite(handEl, 40, 4);
 
-  return { root, stage, spots, windows, car, actors, fx, shelf, hand };
+  return { root, stage, spots, windows, car, carSprite, actors, fx, shelf, hand };
 }
 
 function chimneySvg(): string {
@@ -144,10 +162,6 @@ function chimneySvg(): string {
   </svg>`;
 }
 
-function bakerySign(): string {
-  return `<g transform="translate(110 112)"><ellipse rx="34" ry="14" fill="#fff" stroke="#2b2b3a" stroke-width="3"/>
-    <path d="M-22 2 Q-10 -14 0 -2 Q10 -14 22 2 Q10 10 0 4 Q-10 10 -22 2Z" fill="#e0a85a" stroke="#2b2b3a" stroke-width="2.5"/></g>`;
-}
 
 /** Scales the stage to fit the window and returns the transform. */
 export function fitStage(stage: HTMLElement): { scale: number; ox: number; oy: number } {

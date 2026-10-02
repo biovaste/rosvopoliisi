@@ -1,135 +1,10 @@
-// SVG art generators. Everything is drawn in code.
+// SVG art generators for items and scenery. Everything is drawn in code.
 
-const OUT = '#2b2b3a';
-
-export interface Costume {
-  stripe: string;
-  hat: 'beanie' | 'bowler' | 'cap' | 'none';
-  hatColor: string;
-  mask: string;
-  mustache: boolean;
-  skin: string;
-  sack: string;
-}
-
-const STRIPES = ['#2b2b3a', '#d6453d', '#2f6fd6', '#7a3fc4', '#1d8a5a'];
-const HATS: Costume['hat'][] = ['beanie', 'bowler', 'cap', 'none'];
-const HAT_COLORS = ['#2b2b3a', '#e0722c', '#3b8fd9', '#c43f7d', '#3a9b54'];
-const MASKS = ['#2b2b3a', '#3b4bb3', '#8a2f8a'];
-const SKINS = ['#f6c9a4', '#e0a77e', '#b97d55', '#f9d7bd'];
-const SACKS = ['#c9a36a', '#b9b9c9', '#d8b878'];
-
-const pick = <T,>(a: readonly T[]): T => a[Math.floor(Math.random() * a.length)];
-
-export function randomCostume(avoid?: Costume[]): Costume {
-  let c: Costume;
-  let guard = 0;
-  do {
-    c = {
-      stripe: pick(STRIPES),
-      hat: pick(HATS),
-      hatColor: pick(HAT_COLORS),
-      mask: pick(MASKS),
-      mustache: Math.random() < 0.5,
-      skin: pick(SKINS),
-      sack: pick(SACKS),
-    };
-    guard++;
-  } while (guard < 10 && avoid?.some((a) => a.stripe === c.stripe && a.hat === c.hat));
-  return c;
-}
-
-function hat(c: Costume): string {
-  switch (c.hat) {
-    case 'beanie':
-      return `<path d="M30 42 Q60 0 90 42 Z" fill="${c.hatColor}" stroke="${OUT}" stroke-width="4"/>
-        <rect x="27" y="36" width="66" height="12" rx="6" fill="${c.hatColor}" stroke="${OUT}" stroke-width="4"/>
-        <circle cx="60" cy="12" r="8" fill="#fff" stroke="${OUT}" stroke-width="4"/>`;
-    case 'bowler':
-      return `<ellipse cx="60" cy="40" rx="42" ry="8" fill="${c.hatColor}" stroke="${OUT}" stroke-width="4"/>
-        <path d="M34 40 Q34 8 60 8 Q86 8 86 40 Z" fill="${c.hatColor}" stroke="${OUT}" stroke-width="4"/>`;
-    case 'cap':
-      return `<path d="M30 40 Q32 12 60 12 Q88 12 90 40 Z" fill="${c.hatColor}" stroke="${OUT}" stroke-width="4"/>
-        <path d="M84 38 Q104 36 108 44 L86 44 Z" fill="${c.hatColor}" stroke="${OUT}" stroke-width="4"/>`;
-    default:
-      return `<path d="M34 34 Q40 18 52 26 Q58 14 68 24 Q80 16 86 34" fill="none" stroke="${OUT}" stroke-width="5" stroke-linecap="round"/>`;
-  }
-}
-
-/** Head only (used for peeking and jail windows). viewBox 0 0 120 100. */
-export function rosvoHead(c: Costume, faceExtra = ''): string {
-  return `
-  <g class="head">
-    <ellipse cx="60" cy="58" rx="32" ry="30" fill="${c.skin}" stroke="${OUT}" stroke-width="4"/>
-    <circle cx="28" cy="60" r="7" fill="${c.skin}" stroke="${OUT}" stroke-width="4"/>
-    <circle cx="92" cy="60" r="7" fill="${c.skin}" stroke="${OUT}" stroke-width="4"/>
-    <path d="M30 50 Q60 40 90 50 L88 62 Q74 66 62 58 Q60 56 58 58 Q46 66 32 62 Z" fill="${c.mask}"/>
-    <g class="eyes-sly">
-      <ellipse cx="46" cy="55" rx="7" ry="6" fill="#fff"/>
-      <ellipse cx="74" cy="55" rx="7" ry="6" fill="#fff"/>
-      <circle cx="49" cy="55" r="3.5" fill="${OUT}"/>
-      <circle cx="77" cy="55" r="3.5" fill="${OUT}"/>
-      <path d="M48 76 Q60 84 74 74" fill="none" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/>
-    </g>
-    <g class="eyes-sorry">
-      <ellipse cx="46" cy="56" rx="7" ry="7" fill="#fff"/>
-      <ellipse cx="74" cy="56" rx="7" ry="7" fill="#fff"/>
-      <circle cx="46" cy="58" r="3.5" fill="${OUT}"/>
-      <circle cx="74" cy="58" r="3.5" fill="${OUT}"/>
-      <path d="M38 44 L52 48 M82 44 L68 48" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M50 80 Q60 74 70 80" fill="none" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/>
-      <ellipse cx="36" cy="70" rx="6" ry="3.5" fill="#f08a8a" opacity=".8"/>
-      <ellipse cx="84" cy="70" rx="6" ry="3.5" fill="#f08a8a" opacity=".8"/>
-    </g>
-    ${c.mustache ? `<path d="M46 72 Q53 66 60 71 Q67 66 74 72 Q67 76 60 73 Q53 76 46 72Z" fill="#5a3a22"/>` : ''}
-    ${hat(c)}
-    ${faceExtra}
-  </g>`;
-}
-
-/** Full-body rosvo. viewBox 0 0 120 200. */
-export function rosvoSvg(c: Costume): string {
-  const stripes = [0, 1, 2, 3]
-    .map((i) => `<rect x="30" y="${104 + i * 16}" width="60" height="8" fill="${c.stripe}"/>`)
-    .join('');
-  return `<svg viewBox="0 0 120 200" width="120" height="200" class="rosvo-svg">
-    <g class="legs">
-      <rect class="leg l" x="40" y="160" width="14" height="30" rx="6" fill="#3d3d52" stroke="${OUT}" stroke-width="3"/>
-      <rect class="leg r" x="66" y="160" width="14" height="30" rx="6" fill="#3d3d52" stroke="${OUT}" stroke-width="3"/>
-      <ellipse cx="45" cy="192" rx="12" ry="6" fill="${OUT}"/>
-      <ellipse cx="75" cy="192" rx="12" ry="6" fill="${OUT}"/>
-    </g>
-    <g class="arms-down">
-      <rect x="18" y="104" width="14" height="44" rx="7" fill="#fff" stroke="${OUT}" stroke-width="3"/>
-      <rect x="88" y="104" width="14" height="44" rx="7" fill="#fff" stroke="${OUT}" stroke-width="3"/>
-      <circle cx="25" cy="150" r="8" fill="${c.skin}" stroke="${OUT}" stroke-width="3"/>
-      <circle cx="95" cy="150" r="8" fill="${c.skin}" stroke="${OUT}" stroke-width="3"/>
-    </g>
-    <g class="arms-up">
-      <rect x="14" y="62" width="14" height="46" rx="7" fill="#fff" stroke="${OUT}" stroke-width="3" transform="rotate(-12 21 108)"/>
-      <rect x="92" y="62" width="14" height="46" rx="7" fill="#fff" stroke="${OUT}" stroke-width="3" transform="rotate(12 99 108)"/>
-      <circle cx="13" cy="60" r="8" fill="${c.skin}" stroke="${OUT}" stroke-width="3"/>
-      <circle cx="107" cy="60" r="8" fill="${c.skin}" stroke="${OUT}" stroke-width="3"/>
-    </g>
-    <rect x="28" y="96" width="64" height="70" rx="16" fill="#fff" stroke="${OUT}" stroke-width="4"/>
-    <clipPath id="b${c.stripe.slice(1)}"><rect x="30" y="98" width="60" height="66" rx="14"/></clipPath>
-    <g clip-path="url(#b${c.stripe.slice(1)})">${stripes}</g>
-    <g transform="translate(0 6)">${rosvoHead(c)}</g>
-  </svg>`;
-}
-
-export function sackSvg(c: Costume): string {
-  return `<svg viewBox="0 0 80 80" width="80" height="80">
-    <path d="M16 36 Q10 74 40 76 Q70 74 64 36 Q52 26 40 30 Q28 26 16 36Z" fill="${c.sack}" stroke="${OUT}" stroke-width="4"/>
-    <path d="M30 28 L40 16 L50 28" fill="${c.sack}" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M28 30 Q40 36 52 30" fill="none" stroke="${OUT}" stroke-width="4"/>
-    <path d="M32 52 a8 8 0 1 0 16 0 a8 8 0 1 0 -16 0 M40 44 v16" fill="none" stroke="${OUT}" stroke-width="3" opacity=".5"/>
-  </svg>`;
-}
+export const OUT = '#2b2b3a';
 
 // ---------- Items ----------
 
-export type ItemKind = 'cake' | 'ball' | 'flowers' | 'bone' | 'icecream' | 'teddy';
+export type ItemKind = 'cake' | 'ball' | 'flowers' | 'bone' | 'icecream' | 'teddy' | 'gold' | 'gem' | 'jewels';
 
 export function itemSvg(kind: ItemKind): string {
   const s = (inner: string) => `<svg viewBox="0 0 100 100" width="100" height="100">${inner}</svg>`;
@@ -178,132 +53,101 @@ export function itemSvg(kind: ItemKind): string {
         <circle cx="50" cy="45" r="4" fill="${OUT}"/>
         <circle cx="41" cy="36" r="3.5" fill="${OUT}"/><circle cx="59" cy="36" r="3.5" fill="${OUT}"/>
         <path d="M40 64 L50 70 L60 64 L50 58Z" fill="#e53935" stroke="${OUT}" stroke-width="2"/>`);
-  }
-}
-
-// ---------- Townspeople ----------
-
-export type OwnerKind = 'baker' | 'kid' | 'grandma' | 'dog' | 'vendor' | 'girl';
-
-export const OWNER_ITEM: Record<OwnerKind, ItemKind> = {
-  baker: 'cake',
-  kid: 'ball',
-  grandma: 'flowers',
-  dog: 'bone',
-  vendor: 'icecream',
-  girl: 'teddy',
-};
-
-function faces(cx: number, cy: number): string {
-  return `<g class="face-happy">
-      <path d="M${cx - 13} ${cy - 2} q4 -6 8 0 M${cx + 5} ${cy - 2} q4 -6 8 0" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M${cx - 12} ${cy + 8} Q${cx} ${cy + 22} ${cx + 12} ${cy + 8} Z" fill="#c2185b" stroke="${OUT}" stroke-width="3"/>
-    </g>
-    <g class="face-calm">
-      <circle cx="${cx - 9}" cy="${cy - 2}" r="3.5" fill="${OUT}"/><circle cx="${cx + 9}" cy="${cy - 2}" r="3.5" fill="${OUT}"/>
-      <path d="M${cx - 8} ${cy + 10} Q${cx} ${cy + 16} ${cx + 8} ${cy + 10}" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
-    </g>
-    <g class="face-sad">
-      <circle cx="${cx - 9}" cy="${cy - 1}" r="3.5" fill="${OUT}"/><circle cx="${cx + 9}" cy="${cy - 1}" r="3.5" fill="${OUT}"/>
-      <path d="M${cx - 16} ${cy - 7} L${cx - 6} ${cy - 11} M${cx + 16} ${cy - 7} L${cx + 6} ${cy - 11}" stroke="${OUT}" stroke-width="3" stroke-linecap="round"/>
-      <path d="M${cx - 8} ${cy + 14} Q${cx} ${cy + 7} ${cx + 8} ${cy + 14}" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M${cx - 12} ${cy + 3} q-3 7 0 9 q3 -2 0 -9" fill="#64b5f6"/>
-    </g>`;
-}
-
-function person(opts: { skin: string; shirt: string; legs: string; hair: string; head?: string; scale?: number }): string {
-  const { skin, shirt, legs, hair, head = '' } = opts;
-  return `<svg viewBox="0 0 120 200" width="120" height="200">
-    <rect x="40" y="150" width="15" height="40" rx="6" fill="${legs}" stroke="${OUT}" stroke-width="3"/>
-    <rect x="65" y="150" width="15" height="40" rx="6" fill="${legs}" stroke="${OUT}" stroke-width="3"/>
-    <ellipse cx="46" cy="192" rx="12" ry="6" fill="${OUT}"/><ellipse cx="74" cy="192" rx="12" ry="6" fill="${OUT}"/>
-    <g class="arms">
-      <rect x="16" y="98" width="14" height="44" rx="7" fill="${shirt}" stroke="${OUT}" stroke-width="3" transform="rotate(-20 23 100)"/>
-      <rect x="90" y="98" width="14" height="44" rx="7" fill="${shirt}" stroke="${OUT}" stroke-width="3" transform="rotate(20 97 100)"/>
-    </g>
-    <rect x="28" y="92" width="64" height="66" rx="18" fill="${shirt}" stroke="${OUT}" stroke-width="4"/>
-    <circle cx="60" cy="58" r="32" fill="${skin}" stroke="${OUT}" stroke-width="4"/>
-    ${hair}
-    ${faces(60, 60)}
-    ${head}
-  </svg>`;
-}
-
-export function ownerSvg(kind: OwnerKind): string {
-  switch (kind) {
-    case 'baker':
-      return person({
-        skin: '#f6c9a4',
-        shirt: '#ffffff',
-        legs: '#5d6d7e',
-        hair: '',
-        head: `<path d="M34 34 Q26 10 44 12 Q50 -2 64 8 Q80 0 84 14 Q98 14 88 34 Z" fill="#fff" stroke="${OUT}" stroke-width="4"/>
-          <rect x="34" y="28" width="52" height="10" fill="#fff" stroke="${OUT}" stroke-width="4"/>
-          <path d="M48 76 Q54 70 60 75 Q66 70 72 76" fill="none" stroke="#6d4c41" stroke-width="5" stroke-linecap="round"/>`,
-      });
-    case 'kid':
-      return person({
-        skin: '#e0a77e',
-        shirt: '#43a047',
-        legs: '#1e88e5',
-        hair: `<path d="M28 54 Q30 20 60 22 Q92 20 92 54 Q80 34 60 38 Q40 34 28 54Z" fill="#3e2723"/>`,
-        head: `<path d="M30 38 Q32 18 60 18 Q88 18 90 38Z" fill="#e53935" stroke="${OUT}" stroke-width="4"/><path d="M30 38 L8 40 L10 34 L30 32Z" fill="#e53935" stroke="${OUT}" stroke-width="3"/>`,
-      });
-    case 'grandma':
-      return person({
-        skin: '#f9d7bd',
-        shirt: '#9575cd',
-        legs: '#7e57c2',
-        hair: `<circle cx="60" cy="22" r="14" fill="#e0e0e0" stroke="${OUT}" stroke-width="3"/><path d="M28 56 Q28 26 60 26 Q92 26 92 56 Q86 38 60 38 Q34 38 28 56Z" fill="#e0e0e0" stroke="${OUT}" stroke-width="3"/>`,
-        head: `<circle cx="51" cy="58" r="10" fill="none" stroke="${OUT}" stroke-width="2.5"/><circle cx="69" cy="58" r="10" fill="none" stroke="${OUT}" stroke-width="2.5"/>`,
-      });
-    case 'vendor':
-      return person({
-        skin: '#b97d55',
-        shirt: '#ffb74d',
-        legs: '#455a64',
-        hair: '',
-        head: `<path d="M30 36 Q32 14 60 14 Q88 14 90 36Z" fill="#fff" stroke="${OUT}" stroke-width="4"/><rect x="28" y="30" width="64" height="8" fill="#f06292" stroke="${OUT}" stroke-width="3"/>`,
-      });
-    case 'girl':
-      return person({
-        skin: '#f6c9a4',
-        shirt: '#f06292',
-        legs: '#f8bbd0',
-        hair: `<path d="M28 60 Q24 22 60 22 Q96 22 92 60 Q84 34 60 36 Q36 34 28 60Z" fill="#ff8f00"/><circle cx="24" cy="44" r="10" fill="#ff8f00"/><circle cx="96" cy="44" r="10" fill="#ff8f00"/>`,
-      });
-    case 'dog':
-      return `<svg viewBox="0 0 120 200" width="120" height="200">
-        <rect x="30" y="150" width="14" height="40" rx="6" fill="#d7a86e" stroke="${OUT}" stroke-width="3"/>
-        <rect x="76" y="150" width="14" height="40" rx="6" fill="#d7a86e" stroke="${OUT}" stroke-width="3"/>
-        <path class="tail" d="M92 130 Q116 110 108 92" fill="none" stroke="${OUT}" stroke-width="12" stroke-linecap="round"/>
-        <path class="tail" d="M92 130 Q116 110 108 92" fill="none" stroke="#d7a86e" stroke-width="6" stroke-linecap="round"/>
-        <ellipse cx="60" cy="140" rx="38" ry="28" fill="#d7a86e" stroke="${OUT}" stroke-width="4"/>
-        <ellipse cx="60" cy="84" rx="32" ry="30" fill="#d7a86e" stroke="${OUT}" stroke-width="4"/>
-        <ellipse cx="28" cy="80" rx="10" ry="22" fill="#8d6e63" stroke="${OUT}" stroke-width="4" transform="rotate(15 28 80)"/>
-        <ellipse cx="92" cy="80" rx="10" ry="22" fill="#8d6e63" stroke="${OUT}" stroke-width="4" transform="rotate(-15 92 80)"/>
-        <ellipse cx="60" cy="98" rx="14" ry="10" fill="#f3e0c4"/>
-        <ellipse cx="60" cy="92" rx="7" ry="5" fill="${OUT}"/>
-        <rect x="36" y="112" width="48" height="8" rx="4" fill="#e53935" stroke="${OUT}" stroke-width="2.5"/>
-        ${faces(60, 76)}
-      </svg>`;
+    case 'gold':
+      return s(`<ellipse cx="50" cy="88" rx="40" ry="7" fill="#000" opacity=".12"/>
+        ${[
+          [14, 62],
+          [50, 62],
+          [32, 38],
+        ]
+          .map(
+            ([x, y]) => `<g transform="translate(${x} ${y})"><path d="M0 24 L6 4 L32 4 L38 24Z" fill="#ffca28" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
+              <path d="M8 8 L28 8" stroke="#fff8e1" stroke-width="3" stroke-linecap="round"/><path d="M4 20 L34 20" stroke="#f9a825" stroke-width="3"/></g>`,
+          )
+          .join('')}
+        <path d="M82 20 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3Z" fill="#fff"/>`);
+    case 'gem':
+      return s(`<path d="M24 34 L36 16 L64 16 L76 34 L50 88Z" fill="#4fc3f7" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M24 34 H76 M36 16 L44 34 L50 88 M64 16 L56 34 L50 88 M44 34 L50 16 L56 34" fill="none" stroke="${OUT}" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M30 32 L38 20 L44 32Z" fill="#e1f5fe"/>
+        <path d="M84 14 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3Z M16 58 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2Z" fill="#fff"/>`);
+    case 'jewels':
+      return s(`<path d="M14 54 L86 54 L80 88 L20 88Z" fill="#c2185b" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M14 54 L22 30 L78 30 L86 54" fill="#f48fb1" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M26 54 Q50 82 74 54" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="1 7" stroke-linecap="round"/>
+        <circle cx="50" cy="70" r="6" fill="#e53935" stroke="${OUT}" stroke-width="2.5"/>
+        <circle cx="36" cy="36" r="7" fill="none" stroke="#ffca28" stroke-width="4"/><path d="M33 28 l3 -5 l3 5Z" fill="#81d4fa" stroke="${OUT}" stroke-width="1.5"/>
+        <circle cx="64" cy="42" r="5" fill="#ab47bc" stroke="${OUT}" stroke-width="2"/>`);
   }
 }
 
 // ---------- Scenery ----------
 
-export function houseSvg(wall: string, roof: string, door: string, extra = ''): string {
+export type BuildingKind = 'house' | 'bakery' | 'shop' | 'cafe' | 'bank';
+
+export interface BuildingLook {
+  kind: BuildingKind;
+  wall: string;
+  roof: string;
+  door: string;
+}
+
+/** Picture sign for a building (no text). */
+function sign(kind: BuildingKind): string {
+  const box = (inner: string) =>
+    `<g transform="translate(110 108)"><rect x="-38" y="-16" width="76" height="32" rx="12" fill="#fff" stroke="${OUT}" stroke-width="3"/>${inner}</g>`;
+  switch (kind) {
+    case 'bakery':
+      return box(`<path d="M-22 4 Q-10 -12 0 0 Q10 -12 22 4 Q10 12 0 6 Q-10 12 -22 4Z" fill="#e0a85a" stroke="${OUT}" stroke-width="2.5"/>`);
+    case 'shop':
+      return box(`<circle cx="-10" cy="0" r="9" fill="#e53935" stroke="${OUT}" stroke-width="2"/><circle cx="10" cy="0" r="9" fill="#ffd54f" stroke="${OUT}" stroke-width="2"/>`);
+    case 'cafe':
+      return box(`<path d="M-12 -8 H8 V4 Q8 10 -2 10 Q-12 10 -12 4Z" fill="#8d6e63" stroke="${OUT}" stroke-width="2.5"/><path d="M8 -4 Q16 -4 14 2 Q12 6 8 4" fill="none" stroke="${OUT}" stroke-width="2.5"/>`);
+    case 'bank':
+      return box(`<path d="M-14 -4 Q-14 -10 0 -10 Q14 -10 14 -4 L14 8 L-14 8Z" fill="#ffca28" stroke="${OUT}" stroke-width="2.5"/><path d="M-4 -2 h8 M0 -6 v12" stroke="${OUT}" stroke-width="2"/>`);
+    default:
+      return `<circle cx="110" cy="68" r="12" fill="#bfe7ff" stroke="${OUT}" stroke-width="4"/><circle cx="110" cy="68" r="12" class="win-lit" fill="#ffe082" stroke="${OUT}" stroke-width="4"/>`;
+  }
+}
+
+function awning(kind: BuildingKind, color: string): string {
+  if (kind === 'house' || kind === 'bank') return '';
+  const stripes = [0, 1, 2, 3, 4, 5, 6, 7]
+    .map((i) => `<path d="M${30 + i * 20} 134 h20 v14 q-10 8 -20 0Z" fill="${i % 2 ? '#fff' : color}" stroke="${OUT}" stroke-width="2.5"/>`)
+    .join('');
+  return stripes;
+}
+
+export function buildingSvg(b: BuildingLook): string {
+  const shop = b.kind !== 'house';
+  const winY = shop ? 156 : 120;
+  const win = (fill: string) =>
+    shop
+      ? `<rect x="34" y="${winY}" width="48" height="44" rx="4" fill="${fill}" stroke="${OUT}" stroke-width="4"/><rect x="138" y="${winY}" width="48" height="44" rx="4" fill="${fill}" stroke="${OUT}" stroke-width="4"/>`
+      : `<rect x="38" y="120" width="40" height="40" rx="4" fill="${fill}" stroke="${OUT}" stroke-width="4"/><rect x="142" y="120" width="40" height="40" rx="4" fill="${fill}" stroke="${OUT}" stroke-width="4"/>`;
+  const panes = shop
+    ? `<path d="M58 ${winY} V${winY + 44} M162 ${winY} V${winY + 44}" stroke="${OUT}" stroke-width="3"/>`
+    : `<path d="M58 120 V160 M38 140 H78 M162 120 V160 M142 140 H182" stroke="${OUT}" stroke-width="3"/>
+       <rect x="34" y="160" width="48" height="10" rx="3" fill="#8d6e63" stroke="${OUT}" stroke-width="3"/><rect x="138" y="160" width="48" height="10" rx="3" fill="#8d6e63" stroke="${OUT}" stroke-width="3"/>
+       <circle cx="44" cy="158" r="5" fill="#f06292"/><circle cx="58" cy="157" r="5" fill="#ffd54f"/><circle cx="72" cy="158" r="5" fill="#f06292"/>
+       <circle cx="148" cy="158" r="5" fill="#ba68c8"/><circle cx="162" cy="157" r="5" fill="#fff"/><circle cx="176" cy="158" r="5" fill="#ba68c8"/>`;
+  const shingles = [0, 1, 2]
+    .map((i) => `<path d="M${40 - i * 12} ${50 + i * 16} L${180 + i * 12} ${50 + i * 16}" stroke="${OUT}" stroke-width="2" opacity=".18"/>`)
+    .join('');
   return `<svg viewBox="0 0 220 230" width="220" height="230">
-    <path d="M6 96 L110 14 L214 96Z" fill="${roof}" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
-    <rect x="22" y="92" width="176" height="134" fill="${wall}" stroke="${OUT}" stroke-width="5"/>
-    <rect x="88" y="150" width="44" height="76" rx="6" fill="${door}" stroke="${OUT}" stroke-width="4"/>
-    <circle cx="124" cy="190" r="4" fill="#ffd54f"/>
-    <g class="win"><rect x="38" y="120" width="40" height="40" rx="4" fill="#bfe7ff" stroke="${OUT}" stroke-width="4"/>
-    <rect x="142" y="120" width="40" height="40" rx="4" fill="#bfe7ff" stroke="${OUT}" stroke-width="4"/></g>
-    <g class="win-lit"><rect x="38" y="120" width="40" height="40" rx="4" fill="#ffe082" stroke="${OUT}" stroke-width="4"/>
-    <rect x="142" y="120" width="40" height="40" rx="4" fill="#ffe082" stroke="${OUT}" stroke-width="4"/></g>
-    <path d="M58 120 V160 M38 140 H78 M162 120 V160 M142 140 H182" stroke="${OUT}" stroke-width="3"/>
-    ${extra}
+    <path d="M6 96 L110 14 L214 96Z" fill="${b.roof}" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
+    ${shingles}
+    <rect x="22" y="92" width="176" height="134" fill="${b.wall}" stroke="${OUT}" stroke-width="5"/>
+    <rect x="160" y="95" width="35" height="128" fill="#000" opacity=".07"/>
+    <rect x="25" y="95" width="170" height="10" fill="#000" opacity=".08"/>
+    <rect x="88" y="150" width="44" height="76" rx="6" fill="${b.door}" stroke="${OUT}" stroke-width="4"/>
+    <rect x="96" y="160" width="28" height="20" rx="3" fill="#000" opacity=".12"/>
+    <circle cx="124" cy="192" r="4" fill="#ffd54f" stroke="${OUT}" stroke-width="1.5"/>
+    <g class="win">${win('#bfe7ff')}</g>
+    <g class="win-lit">${win('#ffe082')}</g>
+    ${panes}
+    ${awning(b.kind, b.roof)}
+    ${sign(b.kind)}
   </svg>`;
 }
 
@@ -336,17 +180,31 @@ export function jailWindowBars(): string {
   </svg>`;
 }
 
-export function carSvg(): string {
+/** Police car facing right. Driver and passenger heads sit behind the windows. */
+export function carSvg(driverHead: string): string {
+  const wheel = (cx: number) => `<g class="wheel" style="transform-origin:${cx}px 112px">
+      <circle cx="${cx}" cy="112" r="22" fill="${OUT}"/><circle cx="${cx}" cy="112" r="10" fill="#cfd8dc"/>
+      <path d="M${cx - 9} 112 H${cx + 9} M${cx} 103 V121" stroke="${OUT}" stroke-width="3"/></g>`;
   return `<svg viewBox="0 0 260 140" width="260" height="140">
-    <path d="M14 96 Q12 66 40 62 L72 30 Q80 22 96 22 L170 22 Q184 22 192 32 L218 62 Q248 66 248 96 L248 110 L14 110Z" fill="#ffffff" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
+    <defs>
+      <clipPath id="cw-rear"><path d="M84 36 L124 36 L124 62 L60 62Z"/></clipPath>
+      <clipPath id="cw-front"><path d="M134 36 L176 36 L202 62 L134 62Z"/></clipPath>
+    </defs>
+    <ellipse cx="131" cy="132" rx="120" ry="9" fill="#000" opacity=".15"/>
+    <path d="M14 96 Q12 66 40 62 L72 30 Q80 22 96 22 L170 22 Q184 22 192 32 L218 62 Q248 66 248 96 L248 110 L14 110Z" fill="#ffffff"/>
     <rect x="14" y="76" width="234" height="20" fill="#2f5aa8"/>
     <path d="M14 96 Q12 66 40 62 L72 30 Q80 22 96 22 L170 22 Q184 22 192 32 L218 62 Q248 66 248 96 L248 110 L14 110Z" fill="none" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M84 36 L124 36 L124 62 L60 62Z" fill="#bfe7ff" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M134 36 L176 36 L202 62 L134 62Z" fill="#bfe7ff" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M84 36 L124 36 L124 62 L60 62Z" fill="#bfe7ff"/>
+    <path d="M134 36 L176 36 L202 62 L134 62Z" fill="#bfe7ff"/>
+    <g clip-path="url(#cw-rear)"><g class="riders"></g></g>
+    <g clip-path="url(#cw-front)"><g transform="translate(140 24) scale(.46)">${driverHead}</g></g>
+    <path d="M84 36 L124 36 L124 62 L60 62Z" fill="none" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M134 36 L176 36 L202 62 L134 62Z" fill="none" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M92 40 L100 40 L84 58 L76 58Z M144 40 L152 40 L140 58 L136 58Z" fill="#fff" opacity=".5"/>
     <g transform="translate(118 86)"><path d="M0 -10 L3 -3 L10 -3 L4 2 L6 9 L0 5 L-6 9 L-4 2 L-10 -3 L-3 -3Z" fill="#ffd54f" stroke="${OUT}" stroke-width="2"/></g>
-    <circle cx="66" cy="112" r="22" fill="${OUT}"/><circle cx="66" cy="112" r="9" fill="#cfd8dc"/>
-    <circle cx="196" cy="112" r="22" fill="${OUT}"/><circle cx="196" cy="112" r="9" fill="#cfd8dc"/>
+    ${wheel(66)}${wheel(196)}
     <rect x="236" y="70" width="14" height="10" rx="3" fill="#fff59d" stroke="${OUT}" stroke-width="3"/>
+    <rect x="10" y="72" width="10" height="10" rx="3" fill="#ef5350" stroke="${OUT}" stroke-width="3"/>
     <rect x="104" y="8" width="54" height="16" rx="6" fill="#455a64" stroke="${OUT}" stroke-width="4"/>
   </svg>`;
 }
@@ -361,6 +219,8 @@ export function carLights(): string {
 export function bushSvg(c = '#4caf50'): string {
   return `<svg viewBox="0 0 200 120" width="200" height="120">
     <path d="M10 116 Q0 70 36 66 Q40 26 80 34 Q100 6 128 30 Q170 22 170 62 Q204 70 190 116Z" fill="${c}" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M150 64 Q192 76 186 114 L118 114 Q162 100 150 64Z" fill="#000" opacity=".1"/>
+    <path d="M44 72 Q50 50 72 48 M92 36 Q106 24 122 32" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" opacity=".3"/>
     <circle cx="60" cy="72" r="5" fill="#e53935"/><circle cx="130" cy="58" r="5" fill="#e53935"/><circle cx="104" cy="92" r="5" fill="#e53935"/>
   </svg>`;
 }
@@ -374,12 +234,62 @@ export function binSvg(): string {
   </svg>`;
 }
 
-export function treeSvg(): string {
+export type TreeStyle = 'apple' | 'birch' | 'autumn';
+
+export function treeSvg(style: TreeStyle): string {
+  const leaf = style === 'birch' ? '#7cb342' : style === 'autumn' ? '#f39c33' : '#43a047';
+  const trunk = style === 'birch' ? '#f5f5f5' : '#8d6e63';
+  const marks =
+    style === 'birch'
+      ? `<path d="M88 200 h10 M104 230 h10 M90 262 h12 M100 182 h8" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/>`
+      : `<path d="M96 200 q4 20 0 40 M106 250 q-4 14 0 30" stroke="${OUT}" stroke-width="2.5" fill="none" opacity=".3"/>`;
+  const fruit =
+    style === 'apple'
+      ? `<circle cx="70" cy="96" r="8" fill="#e53935" stroke="${OUT}" stroke-width="2"/><circle cx="130" cy="80" r="8" fill="#e53935" stroke="${OUT}" stroke-width="2"/><circle cx="120" cy="140" r="8" fill="#e53935" stroke="${OUT}" stroke-width="2"/><circle cx="56" cy="146" r="8" fill="#e53935" stroke="${OUT}" stroke-width="2"/>`
+      : style === 'autumn'
+        ? `<path d="M60 110 l6 -8 l6 8 l-6 8Z M130 120 l6 -8 l6 8 l-6 8Z M100 70 l6 -8 l6 8 l-6 8Z" fill="#e65100"/>`
+        : `<path d="M60 120 q10 -10 20 0 M120 90 q10 -10 20 0 M100 150 q10 -10 20 0" stroke="#558b2f" stroke-width="4" fill="none" stroke-linecap="round"/>`;
   return `<svg viewBox="0 0 200 300" width="200" height="300">
-    <path d="M80 300 L86 160 L114 160 L120 300Z" fill="#8d6e63" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M30 170 Q-6 140 26 104 Q10 54 60 46 Q80 0 124 22 Q176 18 172 70 Q206 100 178 146 Q170 186 120 176 Q100 196 76 180 Q50 190 30 170Z" fill="#43a047" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
-    <circle cx="70" cy="96" r="7" fill="#ff7043"/><circle cx="130" cy="80" r="7" fill="#ff7043"/><circle cx="120" cy="140" r="7" fill="#ff7043"/>
+    <ellipse cx="100" cy="296" rx="60" ry="8" fill="#000" opacity=".15"/>
+    <path d="M80 300 L86 160 L114 160 L120 300Z" fill="${trunk}" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
+    ${marks}
+    <path d="M30 170 Q-6 140 26 104 Q10 54 60 46 Q80 0 124 22 Q176 18 172 70 Q206 100 178 146 Q170 186 120 176 Q100 196 76 180 Q50 190 30 170Z" fill="${leaf}" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M150 60 Q180 100 160 150 Q130 176 100 170 Q150 140 150 60Z" fill="#000" opacity=".08"/>
+    <path d="M50 70 Q60 52 82 52" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" opacity=".35"/>
+    ${fruit}
   </svg>`;
+}
+
+export function barrelSvg(): string {
+  return `<svg viewBox="0 0 120 140" width="120" height="140">
+    <path d="M18 20 Q8 76 18 134 L102 134 Q112 76 102 20Z" fill="#a1694a" stroke="${OUT}" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M14 44 H106 M12 104 H108" stroke="#546e7a" stroke-width="8"/>
+    <path d="M40 22 Q34 76 40 132 M80 22 Q86 76 80 132" stroke="${OUT}" stroke-width="2.5" fill="none" opacity=".35"/>
+    <ellipse cx="60" cy="20" rx="42" ry="9" fill="#bf8a63" stroke="${OUT}" stroke-width="5"/>
+  </svg>`;
+}
+
+export function hillsSvg(): string {
+  return `<svg viewBox="0 0 1600 260" width="1600" height="260">
+    <path d="M0 260 Q160 80 380 150 Q560 40 800 140 Q1040 60 1220 150 Q1420 70 1600 160 L1600 260Z" fill="#a5d6a7"/>
+    <path d="M0 260 Q260 150 520 200 Q760 130 1000 200 Q1260 150 1600 210 L1600 260Z" fill="#81c784"/>
+  </svg>`;
+}
+
+export function fenceSvg(w: number): string {
+  const n = Math.floor(w / 26);
+  const posts = Array.from({ length: n }, (_, i) => `<path d="M${6 + i * 26} 44 V10 l8 -8 l8 8 V44Z" fill="#fff" stroke="${OUT}" stroke-width="3" stroke-linejoin="round"/>`).join('');
+  return `<svg viewBox="0 0 ${w} 48" width="${w}" height="48"><rect x="0" y="18" width="${w}" height="8" fill="#fff" stroke="${OUT}" stroke-width="3"/>${posts}</svg>`;
+}
+
+export function flowersSvg(colors: string[]): string {
+  return `<svg viewBox="0 0 120 50" width="120" height="50">${colors
+    .map((c, i) => {
+      const x = 14 + i * 24;
+      return `<path d="M${x} 48 V24" stroke="#388e3c" stroke-width="4"/><path d="M${x} 38 q-10 -2 -10 -10 q8 0 10 8" fill="#66bb6a"/>
+        <circle cx="${x}" cy="20" r="9" fill="${c}" stroke="${OUT}" stroke-width="2.5"/><circle cx="${x}" cy="20" r="3.5" fill="#fff59d"/>`;
+    })
+    .join('')}</svg>`;
 }
 
 export function crateSvg(): string {

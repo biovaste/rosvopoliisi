@@ -77,6 +77,7 @@ await page.screenshot({ path: `${OUT}/00-start.png` });
 await tap({ x: 512, y: 384 });
 
 let shot = 1;
+let sawRun = false;
 for (let cycle = 0; cycle < 2; cycle++) {
   console.log(`cycle ${cycle + 1}`);
   for (let r = 0; r < 3; r++) {
@@ -99,11 +100,31 @@ for (let cycle = 0; cycle < 2; cycle++) {
       await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-hint.png` });
     }
 
-    let t = await tg();
-    await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-hiding.png` });
-    await tap(t.rosvo);
-    s = await waitFor((s) => s.phase === 'caught' && !s.busy, 'caught');
-    check(true, 'rosvo caught');
+    // Rosvot sometimes run between hiding spots; try to catch one on the run.
+    let running = false;
+    if (!(cycle === 0 && r === 0) && !sawRun) {
+      running = await waitFor((s) => s.moving, 'run', 8500).then(() => true, () => false);
+    }
+    if (running) {
+      await sleep(200);
+      await tap((await tg()).rosvo);
+      s = await waitFor((s) => s.phase === 'caught' && !s.busy, 'caught on the run');
+      sawRun = true;
+      check(true, 'rosvo ran between spots and was caught on the run');
+    } else {
+      await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-hiding.png` });
+      // The rosvo may dash to another spot at any moment; retry if the tap lands after it left.
+      for (let tries = 0; ; tries++) {
+        await waitFor((s) => !s.moving && !s.busy, 'rosvo settled', 20000);
+        await tap((await tg()).rosvo);
+        await sleep(400);
+        s = await st();
+        if (s.phase !== 'hiding' || tries >= 6) break;
+      }
+      s = await waitFor((s) => s.phase === 'caught' && !s.busy, 'caught');
+      check(true, 'rosvo caught');
+    }
+    let t;
 
     t = await tg();
     if (cycle === 0 && r === 0) {
@@ -119,15 +140,27 @@ for (let cycle = 0; cycle < 2; cycle++) {
     await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-jailed.png` });
 
     t = await tg();
+    check(!s.itemOut, 'loot is stashed in a hiding spot');
+    if (cycle === 0 && r === 0) {
+      // Loot dropped away from its owner floats back.
+      await drag(t.item, { x: 512, y: 200 });
+      s = await waitFor((s) => s.itemOut && !s.busy, 'loot floats back');
+      check(s.phase === 'returning', 'loot dropped away from owner floats back');
+      t = await tg();
+    }
     await drag(t.item, t.owner);
     if (r < 2) await waitFor((s) => s.phase === 'stealing' || s.phase === 'hiding', 'next robbery');
   }
   await waitFor((s) => s.phase === 'celebrating', 'celebrating');
   await sleep(1300);
   await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-celebrate.png` });
+  await sleep(7200);
+  await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-car.png` });
   const s = await waitFor((s) => s.phase === 'hiding' && s.cycle === cycle + 1, 'loop restart', 30000);
   check(s.jailed === 0 && s.stickers === cycle + 1, `loop restarted: cycle=${s.cycle}, time=${s.time}, stickers=${s.stickers}`);
 }
+
+check(sawRun, 'saw a rosvo run between hiding spots');
 
 // Parent panel: hold the lock for 3 s.
 await touch('touchStart', [{ x: 34, y: 34 }]);

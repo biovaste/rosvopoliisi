@@ -1,6 +1,7 @@
 // All game state lives in this one plain object.
 
-import type { Costume, ItemKind, OwnerKind } from './art';
+import type { ItemKind } from './art';
+import type { Costume, Look, Role } from './people';
 import type { Pt } from './layout';
 
 export type Phase =
@@ -9,16 +10,18 @@ export type Phase =
   | 'hiding' // rosvo peeks out, waiting for a tap
   | 'caught' // rosvo caught, waiting to be dragged to jail
   | 'carrying' // child is dragging the rosvo
-  | 'returning' // child returns the item to its owner
+  | 'returning' // child finds the stashed item and returns it to its owner
   | 'celebrating'; // jail is full
 
 export type TimeOfDay = 'day' | 'evening' | 'night';
 export const TIMES: TimeOfDay[] = ['day', 'evening', 'night'];
 
 export interface Owner {
-  kind: OwnerKind;
+  role: Role;
+  look: Look;
   item: ItemKind;
-  slot: number;
+  /** Where the owner stands this cycle (feet). */
+  pos: Pt;
   /** True once the item has been stolen and not yet returned. */
   robbed: boolean;
 }
@@ -47,6 +50,12 @@ export interface State {
   jailed: number;
   spot: number;
   lastSpot: number;
+  /** Spot where the current rosvo stashed the loot. */
+  stashSpot: number;
+  /** The loot has been pulled out of its stash. */
+  itemOut: boolean;
+  /** The rosvo is running between hiding spots (still catchable). */
+  moving: boolean;
   misses: number;
   /** Rosvo holds still and wiggles (after 2 misses). */
   still: boolean;
@@ -72,6 +81,9 @@ export const state: State = {
   jailed: 0,
   spot: 0,
   lastSpot: -1,
+  stashSpot: -1,
+  itemOut: false,
+  moving: false,
   misses: 0,
   still: false,
   rosvoRest: { x: 0, y: 0 },

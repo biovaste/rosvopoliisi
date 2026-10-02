@@ -8,6 +8,24 @@ The game uses Vite and TypeScript with no game engine. Everything is drawn as
 inline SVG and every sound is synthesised with the Web Audio API, so there are
 no external assets or network requests.
 
+## How it plays
+
+1. A rosvo steals something (cake, ball, gold, gems, jewellery and more), stashes
+   the loot in one place, and hides somewhere else.
+2. Tap the rosvo to catch it. Rosvot sometimes dash between hiding spots, and
+   they can be caught on the run. Later rounds have more dashing.
+3. Drag the caught rosvo to the jail or police car.
+4. Find the glowing loot and drag it to its owner. Owners stand in different
+   places each round, and the thought bubble shows a faded picture of the
+   missing item.
+5. When the jail is full: siren, confetti and a sticker. The rosvot say sorry
+   and the police car drives them away. Then the time of day moves on.
+
+The town (buildings, colours, tree, hiding objects, decorations and the police
+officer) is re-rolled on every page load. Skin tone, hair and gender are chosen
+the same random way for rosvot, townspeople and the police. Each round's three
+rosvot always have different skin tones and a mix of genders.
+
 ## Run locally
 
 ```sh
@@ -51,7 +69,9 @@ error. It needs Playwright's Chromium (`npx playwright install chromium`).
 - `src/state.ts`: the single game-state object and its phases
 - `src/game.ts`: the steal / catch / jail / return / celebrate loop
 - `src/scene.ts`: builds the town DOM
-- `src/art.ts`: SVG drawings
+- `src/art.ts`: SVG drawings of items and scenery
+- `src/people.ts`: rosvot, townspeople and the police officer
+- `src/town.ts`: the per-session random town
 - `src/audio.ts`: Web Audio sound effects
 - `src/fx.ts`: ripples, confetti, sparkles and the hint hand
 - `src/parent.ts`: hold-to-open parent panel
