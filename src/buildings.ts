@@ -83,8 +83,8 @@ function fill(id: string, tile: TileArt | null, fallback: string, k = 1): { def:
 }
 
 /**
- * The ground layer drawn over the sky picture: the winding road, the street,
- * sidewalks, lawn, playground sand and market paving. 1200 x 800.
+ * The ground layer drawn over the sky picture: the street, sidewalks, lawn,
+ * playground sand and market paving. 1200 x 800.
  */
 export function backdropSvg(t: { grass: TileArt | null; sand: TileArt | null; sidewalk: TileArt | null; street: TileArt | null }): string {
   const grass = fill('pg', t.grass, '#7cc35a');
@@ -95,15 +95,13 @@ export function backdropSvg(t: { grass: TileArt | null; sand: TileArt | null; si
   const edge = `stroke="${OUT}" stroke-width="3"`;
   return `<svg viewBox="0 0 1200 800" width="1200" height="800" style="overflow:visible">
     <defs>${grass.def}${sand.def}${walk.def}${plaza.def}${street.def}</defs>
-    <path d="M628 414 Q612 440 636 462 Q668 488 650 505 L560 505 Q598 482 596 458 Q588 436 620 414Z" fill="${street.paint}" ${edge}/>
     <path d="${wob(rect(-60, 470, 1320, 35), 1)}" fill="${walk.paint}" ${edge}/>
     <path d="${wob(rect(-60, 505, 1320, 82), 1)}" fill="${street.paint}" ${edge}/>
     <path d="M-60 546 H1260" stroke="#fff" stroke-width="5" stroke-dasharray="34 26" opacity=".85"/>
     <path d="${wob(rect(-60, 587, 1320, 28), 1)}" fill="${walk.paint}" ${edge}/>
     <path d="M-60 615 H1260 V840 H-60Z" fill="${grass.paint}"/>
     <path d="M-60 615 H1260" ${edge}/>
-    <path d="M20 650 Q200 618 390 650 Q420 730 380 800 L20 800Z" fill="${sand.paint}" ${edge}/>
-    <path d="M800 640 Q1000 618 1260 636 L1260 820 L780 820 Q760 720 800 640Z" fill="${plaza.paint}" ${edge}/>
-    <path d="M430 615 Q560 700 520 800 L610 800 Q640 700 520 615Z" fill="${plaza.paint}" ${edge}/>
+    <path d="M14 646 Q230 616 450 642 Q478 730 452 800 L14 800Z" fill="${sand.paint}" ${edge}/>
+    <path d="M776 615 H1260 V820 H752 Q730 712 776 615Z" fill="${plaza.paint}" ${edge}/>
   </svg>`;
 }

@@ -25,7 +25,16 @@ export const BASE_Y = 470;
 // ---------- Buildings ----------
 
 /** Centre x of the four building slots (left to right). */
-export const SLOT_CX = [445, 785, 962, 1130];
+/** Buildings stand side by side (slightly overlapping) from the station to the right edge. */
+export const SLOT_CX: number[] = (() => {
+  let x = 350;
+  return town.buildings.map((b) => {
+    const w = BUILDING_ART[b.kind].w;
+    const c = x + w / 2;
+    x += w - 6;
+    return c;
+  });
+})();
 
 export interface Placed {
   art: BuildingArt;
@@ -112,7 +121,7 @@ function spot(kind: SpotKind, use: SpotUse, x: number, bottom: number, w: number
 function chimneySpots(): SpotDef[] {
   const out: SpotDef[] = [];
   town.buildings.forEach((b, i) => {
-    if (i === 3 || (b.kind !== 'home' && b.kind !== 'bakery')) return;
+    if (b.kind !== 'home' && b.kind !== 'bakery') return;
     const p = placeBuilding(b.kind, i);
     const rx = p.art.w * 0.7;
     const top = p.y + roofAt(p.art, rx) - 50;
@@ -135,7 +144,7 @@ function withArt(d: SpotDef, name: string, clipFrac: number, ax = 0.5, os = 1): 
   return { ...d, art: { ...a, w, h }, w, h, top: d.top + d.h - h, clip: clipFrac * h, ax, os: 1 };
 }
 
-const backTree = withArt(spot('tree', 'both', 873, 452, 200, 300, 40, 290), `tree-${town.backTree}`, 0.1);
+const backTree = withArt(spot('tree', 'both', (SLOT_CX[1] + SLOT_CX[2]) / 2, 452, 200, 300, 40, 290), `tree-${town.backTree}`, 0.1);
 backTree.s = 0.55;
 const roof = spot('roof', 'rosvo', STATION.x + 70, STATION.y + roofAt(stationArt, 55) + 10, 0, 0, 8, 299);
 roof.s = 0.58;
@@ -146,14 +155,17 @@ export const SPOTS: SpotDef[] = [
   backTree,
   roof,
   spot('mailbox', 'stash', 548, 500, 60, 90, 22),
-  withArt(spot('slide', 'rosvo', 140, 776, 220, 170, 40), 'slide', 0.3, 0.3),
-  withArt(spot('tunnel', 'both', 318, 792, 170, 96, 30), 'tunnel', 0.12),
-  withArt(spot('bush', 'both', 500, 795, 200, 120, 50), 'bush', 0.4),
-  withArt(spot('tree', 'both', 670, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
-  withArt(spot('planter', 'stash', 790, 795, 120, 76, 26), 'planter', 0.3),
-  withArt(spot('crates', 'both', 900, 760, 160, 140, 30), 'crates', 0.07),
-  spot('sacks', 'stash', 1010, 798, 130, 84, 30),
-  spot('stall', 'rosvo', 1110, 750, 190, 96, 22),
+  // Playground: slide and tunnel side by side on the sand.
+  withArt(spot('slide', 'rosvo', 108, 776, 220, 170, 40), 'slide', 0.3, 0.3),
+  withArt(spot('tunnel', 'both', 362, 795, 170, 96, 30), 'tunnel', 0.12),
+  // Lawn: bush and the small tree.
+  withArt(spot('bush', 'both', 560, 795, 200, 120, 50), 'bush', 0.4),
+  withArt(spot('tree', 'both', 700, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
+  // Market square: planter in front, crates behind, sacks by the stall.
+  withArt(spot('planter', 'stash', 852, 795, 120, 76, 26), 'planter', 0.3),
+  withArt(spot('crates', 'both', 962, 735, 160, 140, 30, 735), 'crates', 0.07),
+  spot('sacks', 'stash', 1062, 798, 130, 84, 30),
+  spot('stall', 'rosvo', 1122, 750, 190, 96, 22),
 ];
 
 export const peekW = (s: SpotDef): number => PEEK_W * s.s;
@@ -180,10 +192,9 @@ export const FREE_POINTS: Pt[] = [
   { x: 560, y: 606 },
   { x: 770, y: 604 },
   { x: 1000, y: 606 },
-  { x: 70, y: 720 },
-  { x: 250, y: 676 },
+  { x: 420, y: 684 },
   { x: 700, y: 770 },
-  { x: 960, y: 688 },
+  { x: 800, y: 700 },
   { x: 690, y: 500 },
   { x: 1170, y: 640 },
 ];

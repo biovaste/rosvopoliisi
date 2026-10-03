@@ -16,11 +16,6 @@ export interface Town {
 
 export function makeTown(): Town {
   const kinds = shuffle(['bakery', 'bank', 'jewelry', 'home'] as BuildingKind[]);
-  // The last slot runs off the right edge, so keep a centre-door building there.
-  if (kinds[3] === 'bakery' || kinds[3] === 'jewelry') {
-    const j = kinds.findIndex((k) => k === 'home' || k === 'bank');
-    [kinds[3], kinds[j]] = [kinds[j], kinds[3]];
-  }
   return {
     buildings: kinds.map((kind) => ({ kind })),
     backTree: pick(['apple', 'autumn'] as TreeStyle[]),

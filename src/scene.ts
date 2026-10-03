@@ -173,14 +173,14 @@ export function buildScene(app: HTMLElement): Scene {
   place(div('prop lamp', stage, art.lampSvg()), 506, 244, 502);
   place(div('prop lamp', stage, art.lampSvg()), 1042, 244, 502);
   const bench = propArt('bench');
-  if (bench) picture(stage, { art: { ...bench, door: 0, roof: [] }, x: 8, y: 738 - bench.h }, 738);
+  // The bench sits on the lawn by the sidewalk, between the playground and the bush.
+  if (bench) picture(stage, { art: { ...bench, door: 0, roof: [] }, x: 470, y: 656 - bench.h }, 656);
   else place(div('prop', stage, art.benchSvg()), 12, 686, 736);
   place(div('prop', stage, art.stallBackSvg()), 1015, 548, 600);
   if (town.fence) {
     const fence = propArt('fence');
     if (fence) {
-      picture(stage, { art: { ...fence, door: 0, roof: [] }, x: 400, y: 620 - fence.h }, 619);
-      picture(stage, { art: { ...fence, door: 0, roof: [] }, x: 1090, y: 624 - fence.h }, 619);
+      picture(stage, { art: { ...fence, door: 0, roof: [] }, x: 618, y: 622 - fence.h }, 621);
     } else {
       place(div('prop', stage, art.fenceSvg(140)), 392, 574, 619);
       place(div('prop', stage, art.fenceSvg(96)), 1104, 578, 619);
