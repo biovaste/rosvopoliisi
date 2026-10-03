@@ -8,7 +8,7 @@ import { initSessionPicker } from './session';
 import { initActors } from './actors';
 import { initParent } from './parent';
 import { initPolice } from './police';
-import { buildScene, fitStage } from './scene';
+import { buildScene, fitStage, placeShelf } from './scene';
 import { setPhase, state } from './state';
 
 const app = document.getElementById('app') as HTMLElement;
@@ -19,8 +19,10 @@ initGame(scene);
 initParent(app);
 
 let view = fitStage(scene.stage);
+placeShelf(scene.shelf, view);
 const refit = () => {
   view = fitStage(scene.stage);
+  placeShelf(scene.shelf, view);
 };
 window.addEventListener('resize', refit);
 window.addEventListener('orientationchange', () => setTimeout(refit, 200));
@@ -83,7 +85,13 @@ window.addEventListener('pointercancel', release);
 for (const ev of ['contextmenu', 'gesturestart', 'gesturechange', 'selectstart', 'dragstart']) {
   document.addEventListener(ev, (e) => e.preventDefault());
 }
-document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+document.addEventListener(
+  'touchmove',
+  (e) => {
+    if (e.cancelable) e.preventDefault();
+  },
+  { passive: false },
+);
 
 // ---------- Per-frame ----------
 

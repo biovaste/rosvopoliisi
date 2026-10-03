@@ -555,6 +555,8 @@ async function awardSticker(): Promise<void> {
   );
   await wait(800);
   const slot = n % 10;
+  scene.shelf.classList.add('show');
+  if (n >= 5) scene.shelf.classList.add('two');
   const tx = SHELF.x + 30 + (slot % 5) * 48;
   const ty = SHELF.y + 32 + Math.floor(slot / 5) * 56;
   sfx.sticker();

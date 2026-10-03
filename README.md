@@ -59,6 +59,15 @@ npm run build      # type-check + production build into dist/
 npm run preview    # serve dist/ on http://localhost:4173 (also on your LAN)
 ```
 
+## Screens
+
+The game is made for tablets in landscape and also works on phones:
+- **4:3 iPads:** see the whole town.
+- **Wider screens** (16:10 tablets, phones): zoom in by trimming some sky from
+  the top, so characters and hiding spots stay as large as possible.
+- **Sticker shelf:** moves down to stay visible.
+- **Wide phones:** the street, grass and painted sky continue past the edges.
+
 ## Play on a tablet over wifi
 
 1. Connect the computer and the tablet to the same wifi.
@@ -107,7 +116,8 @@ missing picture, save it as `art-src/sky-evening.jpg`,
 
 ```sh
 npm run build && npx vite preview --port 4173 &
-npm run test:e2e
+npm run test:e2e                      # iPad size (1024x768)
+VW=844 VH=390 npm run test:e2e        # phone size
 ```
 
 The test uses touch emulation at 1024x768 and plays two full cycles, covering

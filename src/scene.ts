@@ -114,14 +114,18 @@ export function buildScene(app: HTMLElement): Scene {
   if (SKY.day) {
     for (const t of ['day', 'evening', 'night'] as const) {
       const art = SKY[t] ?? SKY.day;
-      const img = document.createElement('img');
-      img.className = `sky-img ${t}${SKY[t] ? '' : ' filtered'}`;
-      img.src = art.url;
-      img.width = art.w;
-      img.height = art.h;
-      img.style.transform = `translate3d(${(W - art.w) / 2}px,0,0)`;
-      img.alt = '';
-      skyArt.appendChild(img);
+      // The picture plus mirrored copies on both sides, so wide screens never see its edges.
+      for (const side of [-1, 0, 1]) {
+        const img = document.createElement('img');
+        img.className = `sky-img ${t}${SKY[t] ? '' : ' filtered'}`;
+        img.src = art.url;
+        img.width = art.w;
+        img.height = art.h;
+        const x = (W - art.w) / 2 + side * art.w;
+        img.style.transform = `translate3d(${x}px,0,0)${side ? ' scaleX(-1)' : ''}`;
+        img.alt = '';
+        skyArt.appendChild(img);
+      }
     }
   }
   const sky = div('skybits', stage);
@@ -170,8 +174,7 @@ export function buildScene(app: HTMLElement): Scene {
   town.buildings.forEach((b, i) => picture(stage, placeBuilding(b.kind, i), BASE_Y - (b.kind === 'bank' ? 2 : i === 3 ? 1 : 0)));
 
   // Street furniture.
-  place(div('prop lamp', stage, art.lampSvg()), 506, 244, 502);
-  place(div('prop lamp', stage, art.lampSvg()), 1042, 244, 502);
+  for (const x of [536, 1072]) lamp(stage, x, 502);
   const bench = propArt('bench');
   // The bench sits on the lawn by the sidewalk, between the playground and the bush.
   if (bench) picture(stage, { art: { ...bench, door: 0, roof: [] }, x: 470, y: 656 - bench.h }, 656);
@@ -226,10 +229,11 @@ export function buildScene(app: HTMLElement): Scene {
   carSprite.at(CAR.x, CAR.y);
 
   const shelf = place(div('shelf', stage), SHELF.x, SHELF.y, Z.shelf);
-  shelf.innerHTML = `<svg viewBox="0 0 250 120" width="250" height="120">
-    <rect x="0" y="54" width="250" height="10" rx="4" fill="#a1887f" stroke="#3a2c2a" stroke-width="3"/>
-    <rect x="0" y="110" width="250" height="10" rx="4" fill="#a1887f" stroke="#3a2c2a" stroke-width="3"/>
-    <path d="M20 64 L30 76 M230 64 L220 76 M20 120 L30 132 M230 120 L220 132" stroke="#6d4c41" stroke-width="4"/></svg>`;
+  // The shelf appears with the first sticker; the second plank only once the first row is full.
+  const plank = (y: number) => `<svg viewBox="0 0 250 30" width="250" height="30" style="margin-top:${y}px">
+    <rect x="0" y="2" width="250" height="10" rx="4" fill="#a1887f" stroke="#3a2c2a" stroke-width="3"/>
+    <path d="M20 12 L30 24 M230 12 L220 24" stroke="#6d4c41" stroke-width="4"/></svg>`;
+  shelf.innerHTML = `<div class="shelf-row r1">${plank(52)}</div><div class="shelf-row r2">${plank(108)}</div>`;
 
   const halo = div('loot-halo', stage, '<div class="halo-glow"></div><div class="halo-rays"></div>');
   halo.style.zIndex = String(Z.loot - 1);
@@ -244,15 +248,29 @@ export function buildScene(app: HTMLElement): Scene {
   return { root, stage, spots, windows, car, carSprite, riders: car.querySelector('.riders') as SVGGElement, riderAt, fx, shelf, hand, halo };
 }
 
-/** Scales the stage to fit the window and returns the transform. */
+/** How much sky may be cut off the top on wide screens (phones), in logical px. */
+const SKY_CROP = 150;
+
+/**
+ * Scales the stage to the window. 4:3 tablets see the whole town; wider screens
+ * (16:10 tablets, phones) zoom in by trimming up to SKY_CROP of sky from the top,
+ * so the playing area stays as large as possible. Returns the transform.
+ */
 export function fitStage(stage: HTMLElement): { scale: number; ox: number; oy: number } {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const scale = Math.min(vw / W, vh / H);
+  const scale = Math.min(vw / W, vh / (H - SKY_CROP));
   const ox = (vw - W * scale) / 2;
-  const oy = (vh - H * scale) / 2;
+  const oy = H * scale <= vh ? (vh - H * scale) / 2 : vh - H * scale;
   stage.style.transform = `translate3d(${ox}px,${oy}px,0) scale(${scale})`;
   return { scale, ox, oy };
+}
+
+/** Keeps the sticker shelf just inside the top of the visible area. */
+export function placeShelf(shelf: HTMLElement, view: { scale: number; oy: number }): void {
+  const visibleTop = Math.max(0, -view.oy / view.scale);
+  SHELF.y = Math.round(visibleTop + 14);
+  shelf.style.transform = `translate3d(${SHELF.x}px,${SHELF.y}px,0)`;
 }
 
 /** The police van picture (or the drawn car) with driver and passenger windows and flashing lights. */
@@ -289,4 +307,15 @@ function buildCar(stage: HTMLElement): { car: HTMLElement; riderAt: (i: number) 
   glow.innerHTML = '<div class="l-red"></div><div class="l-blue"></div>';
   // The back window fits two sheepish faces; the third rosvo rides out of sight.
   return { car, riderAt: (i) => (i < 2 ? `translate(${rear.x - 2 + i * 24} ${rear.y + 8}) scale(.27)` : null) };
+}
+
+/** Street lamp standing on the back sidewalk (picture if present), with a glow that lights up in the evening. */
+function lamp(stage: HTMLElement, cx: number, bottom: number): void {
+  const a = propArt('lamp');
+  if (!a) {
+    place(div('prop lamp', stage, art.lampSvg()), cx - 30, bottom - 258, bottom);
+    return;
+  }
+  const el = place(div('prop lamp', stage), cx - a.w / 2, bottom - a.h, bottom);
+  el.innerHTML = `<img src="${a.url}" width="${a.w}" height="${a.h}" alt=""><div class="glow lamp-glow" style="left:${a.w / 2 - 40}px;top:${a.h * 0.17 - 40}px"></div>`;
 }

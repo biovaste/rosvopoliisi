@@ -95,24 +95,6 @@ body[data-time='night'] .sky.night {
 .skybits {
   z-index: 1;
 }
-.stage > .backdrop::before {
-  content: '';
-  position: absolute;
-  left: -1200px;
-  top: 300px;
-  width: 1200px;
-  height: 600px;
-  background: #8cc96b;
-}
-.stage > .backdrop::after {
-  content: '';
-  position: absolute;
-  left: 1200px;
-  top: 300px;
-  width: 1200px;
-  height: 600px;
-  background: #8cc96b;
-}
 .skybits > div {
   position: absolute;
   left: 0;
@@ -1317,4 +1299,88 @@ body[data-time='night'] .bird {
 .car.flash .van-lights .l-blue {
   animation: blink 0.3s steps(1) infinite reverse;
   animation-delay: 0.15s;
+}
+
+.lamp img {
+  display: block;
+}
+.lamp-glow {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 236, 140, 0.95) 0%, rgba(255, 214, 90, 0.55) 35%, rgba(255, 214, 90, 0) 70%);
+  transform: scale(1.6);
+}
+
+/* ---------- Small screens (phones in landscape) ---------- */
+
+.start .play svg,
+.start-peek svg {
+  width: 100%;
+  height: 100%;
+}
+.start-peek {
+  width: 180px;
+  height: 150px;
+}
+@media (max-height: 520px) {
+  .start .play {
+    width: 150px;
+    height: 150px;
+  }
+  .start-peek {
+    width: 110px;
+    height: 92px;
+    margin-bottom: -10px;
+  }
+  .session-picker {
+    gap: 12px;
+  }
+  .session-choice {
+    width: 76px;
+    height: 76px;
+    border-radius: 20px;
+  }
+  .session-choice svg {
+    width: 50px;
+    height: 50px;
+  }
+  .end-sticker svg {
+    width: 76px;
+    height: 76px;
+  }
+  .end-hat svg {
+    width: 100px;
+    height: 67px;
+  }
+  .pp-btn {
+    width: 90px;
+    height: 90px;
+  }
+  .pp-box {
+    gap: 28px;
+    padding: 24px;
+  }
+}
+
+/* Sticker shelf: hidden until the first sticker, second plank after five. */
+.shelf {
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.shelf.show {
+  opacity: 1;
+}
+.shelf-row {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transition: opacity 0.6s;
+}
+.shelf .r2 {
+  opacity: 0;
+}
+.shelf.two .r2 {
+  opacity: 1;
 }

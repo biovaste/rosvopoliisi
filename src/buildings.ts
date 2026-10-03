@@ -95,13 +95,13 @@ export function backdropSvg(t: { grass: TileArt | null; sand: TileArt | null; si
   const edge = `stroke="${OUT}" stroke-width="3"`;
   return `<svg viewBox="0 0 1200 800" width="1200" height="800" style="overflow:visible">
     <defs>${grass.def}${sand.def}${walk.def}${plaza.def}${street.def}</defs>
-    <path d="${wob(rect(-60, 470, 1320, 35), 1)}" fill="${walk.paint}" ${edge}/>
-    <path d="${wob(rect(-60, 505, 1320, 82), 1)}" fill="${street.paint}" ${edge}/>
-    <path d="M-60 546 H1260" stroke="#fff" stroke-width="5" stroke-dasharray="34 26" opacity=".85"/>
-    <path d="${wob(rect(-60, 587, 1320, 28), 1)}" fill="${walk.paint}" ${edge}/>
-    <path d="M-60 615 H1260 V840 H-60Z" fill="${grass.paint}"/>
-    <path d="M-60 615 H1260" ${edge}/>
+    <path d="${wob(rect(-300, 470, 1800, 35), 1)}" fill="${walk.paint}" ${edge}/>
+    <path d="${wob(rect(-300, 505, 1800, 82), 1)}" fill="${street.paint}" ${edge}/>
+    <path d="M-300 546 H1500" stroke="#fff" stroke-width="5" stroke-dasharray="34 26" opacity=".85"/>
+    <path d="${wob(rect(-300, 587, 1800, 28), 1)}" fill="${walk.paint}" ${edge}/>
+    <path d="M-300 615 H1500 V840 H-300Z" fill="${grass.paint}"/>
+    <path d="M-300 615 H1500" ${edge}/>
     <path d="M14 646 Q230 616 450 642 Q478 730 452 800 L14 800Z" fill="${sand.paint}" ${edge}/>
-    <path d="M776 615 H1260 V820 H752 Q730 712 776 615Z" fill="${plaza.paint}" ${edge}/>
+    <path d="M776 615 H1500 V820 H752 Q730 712 776 615Z" fill="${plaza.paint}" ${edge}/>
   </svg>`;
 }

@@ -154,13 +154,15 @@ export const SPOTS: SpotDef[] = [
   ...chimneySpots(),
   backTree,
   roof,
-  spot('mailbox', 'stash', 548, 500, 60, 90, 22),
+  withArt(spot('mailbox', 'stash', 548, 500, 60, 90, 22), 'mailbox', 0.12),
   // Playground: slide and tunnel side by side on the sand.
   withArt(spot('slide', 'rosvo', 108, 776, 220, 170, 40), 'slide', 0.3, 0.3),
   withArt(spot('tunnel', 'both', 362, 795, 170, 96, 30), 'tunnel', 0.12),
   // Lawn: bush and the small tree.
   withArt(spot('bush', 'both', 560, 795, 200, 120, 50), 'bush', 0.4),
-  withArt(spot('tree', 'both', 700, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
+  propArt('tree-birch')
+    ? withArt(spot('tree', 'both', 700, 712, 150, 225, 38, 712, 0.75), 'tree-birch', 0.08)
+    : withArt(spot('tree', 'both', 700, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
   // Market square: planter in front, crates behind, sacks by the stall.
   withArt(spot('planter', 'stash', 852, 795, 120, 76, 26), 'planter', 0.3),
   withArt(spot('crates', 'both', 962, 735, 160, 140, 30, 735), 'crates', 0.07),
@@ -199,4 +201,5 @@ export const FREE_POINTS: Pt[] = [
   { x: 1170, y: 640 },
 ];
 
+/** Sticker shelf (y moves down on wide screens where the top of the sky is cut off). */
 export const SHELF = { x: 920, y: 14, w: 250, h: 120 };

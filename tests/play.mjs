@@ -1,9 +1,12 @@
-// End-to-end check: plays two full cycles with touch emulation at 1024x768.
+// End-to-end check: plays two full levels with touch emulation.
+// Screen size defaults to an iPad (1024x768); set VW/VH to try others, e.g. a phone: VW=844 VH=390.
 // Usage: npm run build && npx vite preview --port 4173 &  then  npm run test:e2e
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
 const URL = process.env.URL || 'http://localhost:4173/';
+const VW = Number(process.env.VW) || 1024;
+const VH = Number(process.env.VH) || 768;
 const OUT = 'test-results';
 mkdirSync(OUT, { recursive: true });
 
@@ -11,7 +14,7 @@ const browser = await chromium.launch(
   process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {},
 );
 const ctx = await browser.newContext({
-  viewport: { width: 1024, height: 768 },
+  viewport: { width: VW, height: VH },
   hasTouch: true,
   isMobile: true,
   deviceScaleFactor: 1,
@@ -76,7 +79,7 @@ function check(cond, msg) {
 await page.goto(URL);
 await page.screenshot({ path: `${OUT}/00-start.png` });
 // Session length: an adult holds the clock on the start screen and picks a duration.
-await touch('touchStart', [{ x: 978, y: 722 }]);
+await touch('touchStart', [{ x: VW - 46, y: VH - 46 }]);
 await sleep(2300);
 await touch('touchEnd', []);
 const pick = await page.evaluate(() => {
@@ -88,7 +91,7 @@ await page.screenshot({ path: `${OUT}/00-session-picker.png` });
 await tap(pick);
 const saved = await page.evaluate(() => localStorage.getItem('rosvopoliisi.minutes'));
 check(saved === '10', 'chosen session length (10 min) is remembered');
-await tap({ x: 512, y: 384 });
+await tap({ x: VW / 2, y: VH / 2 });
 
 let shot = 1;
 let sawRun = false;
@@ -104,9 +107,9 @@ for (let cycle = 0; cycle < 2; cycle++) {
 
     if (cycle === 0 && r === 0) {
       // Two misses -> rosvo relocates, then holds still and wiggles.
-      await tap({ x: 30 + 0, y: 760 });
+      await tap({ x: 30, y: VH - 8 });
       await sleep(900);
-      await tap({ x: 1000, y: 40 });
+      await tap({ x: VW - 24, y: 40 });
       await sleep(900);
       s = await st();
       check(s.misses === 2 && s.still, 'after 2 misses the rosvo holds still');
@@ -151,7 +154,7 @@ for (let cycle = 0; cycle < 2; cycle++) {
     t = await tg();
     if (cycle === 0 && r === 0) {
       // Drop far from the jail -> floats back.
-      await drag(t.rosvo, { x: 900, y: 450 });
+      await drag(t.rosvo, { x: VW * 0.88, y: VH * 0.58 });
       s = await waitFor((s) => s.phase === 'caught' && !s.busy, 'float back');
       check(s.jailed === 0, 'drop away from jail floats back');
       t = await tg();
@@ -172,7 +175,7 @@ for (let cycle = 0; cycle < 2; cycle++) {
       check(halo > 0.5, `lost loot shines when nobody touches the screen (halo ${halo.toFixed(2)})`);
       await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-shine.png` });
       // Loot dropped away from its owner floats back.
-      await drag(t.item, { x: 512, y: 200 });
+      await drag(t.item, { x: VW / 2, y: VH * 0.26 });
       s = await waitFor((s) => s.itemOut && !s.busy, 'loot floats back');
       check(s.phase === 'returning', 'loot dropped away from owner floats back');
       const front = await page.evaluate(() => {
@@ -201,7 +204,7 @@ for (let cycle = 0; cycle < 2; cycle++) {
     const open = await page.evaluate(() => document.querySelector('.parent-panel')?.classList.contains('open'));
     check(open, 'parent panel opens after a 3 s hold');
     await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-parent.png` });
-    await tap({ x: 512, y: 100 });
+    await tap({ x: VW / 2, y: VH * 0.13 });
   } else {
     const s = await waitFor((s) => s.phase === 'ended', 'session end', 30000);
     await sleep(1800);
@@ -214,14 +217,14 @@ for (let cycle = 0; cycle < 2; cycle++) {
 check(sawRun, 'saw a rosvo run between hiding spots');
 
 // Holding the corner button on the end screen starts a new session.
-await touch('touchStart', [{ x: 978, y: 722 }]);
+await touch('touchStart', [{ x: VW - 46, y: VH - 46 }]);
 await sleep(3400);
 await touch('touchEnd', []);
 await page.waitForFunction(() => window.__rosvo && window.__rosvo.state().phase === 'start', null, { timeout: 10000 });
 check(true, 'holding the end-screen button starts a new session');
 
 // Portrait shows the rotate picture.
-await page.setViewportSize({ width: 768, height: 1024 });
+await page.setViewportSize({ width: VH, height: VW });
 await sleep(200);
 const rot = await page.evaluate(() => getComputedStyle(document.querySelector('.rotate')).display);
 check(rot === 'flex', 'portrait shows the rotate-device picture');
