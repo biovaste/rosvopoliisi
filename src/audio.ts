@@ -83,6 +83,42 @@ function noise(at: number, dur: number, vol: number, freq: number): void {
 
 const NOTE = (n: number): number => 440 * Math.pow(2, (n - 69) / 12);
 
+// ---------- Looping water spray (fire mode) ----------
+
+let spray: { src: AudioBufferSourceNode; g: GainNode } | null = null;
+
+/** Starts the hiss of water from the hose; call sprayStop() to end it. */
+export function sprayStart(): void {
+  if (!ctx || !master || spray) return;
+  const len = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  const f = ctx.createBiquadFilter();
+  f.type = 'bandpass';
+  f.frequency.value = 2200;
+  f.Q.value = 0.6;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.13, ctx.currentTime + 0.08);
+  src.connect(f);
+  f.connect(g);
+  g.connect(master);
+  src.start();
+  spray = { src, g };
+}
+
+export function sprayStop(): void {
+  if (!ctx || !spray) return;
+  const { src, g } = spray;
+  spray = null;
+  g.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.05);
+  src.stop(ctx.currentTime + 0.3);
+}
+
 export const sfx = {
   tap(): void {
     tone({ type: 'sine', freq: 660, to: 880, dur: 0.09, vol: 0.18 });
@@ -160,6 +196,44 @@ export const sfx = {
     noise(0.12, 0.05, 0.25, 4500);
     tone({ type: 'square', freq: 2100, at: 0.12, dur: 0.05, vol: 0.06 });
     tone({ type: 'triangle', freq: NOTE(79), at: 0.25, dur: 0.2, vol: 0.12 });
+  },
+  /** Fire alarm bell: a fast metallic ring. */
+  bell(): void {
+    for (let i = 0; i < 14; i++) {
+      tone({ type: 'triangle', freq: 1760, at: i * 0.07, dur: 0.06, vol: 0.12 });
+      tone({ type: 'sine', freq: 2637, at: i * 0.07, dur: 0.05, vol: 0.06 });
+    }
+  },
+  /** Fire truck siren: two long tones, lower than the police one. */
+  fireSiren(): void {
+    if (!ctx || !master) return;
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'triangle';
+    for (let i = 0; i < 4; i++) osc.frequency.setValueAtTime(i % 2 ? 440 : 587, t0 + i * 0.6);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.15, t0 + 0.05);
+    g.gain.setValueAtTime(0.15, t0 + 2.2);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.4);
+    osc.connect(g);
+    g.connect(master);
+    osc.start(t0);
+    osc.stop(t0 + 2.5);
+  },
+  horn(): void {
+    tone({ type: 'square', freq: 233, dur: 0.22, vol: 0.07 });
+    tone({ type: 'square', freq: 294, dur: 0.22, vol: 0.06 });
+    tone({ type: 'square', freq: 233, at: 0.3, dur: 0.3, vol: 0.07 });
+    tone({ type: 'square', freq: 294, at: 0.3, dur: 0.3, vol: 0.06 });
+  },
+  crackle(): void {
+    for (let i = 0; i < 6; i++) noise(i * 0.09 + Math.random() * 0.05, 0.03, 0.12, 1200 + Math.random() * 1500);
+  },
+  /** A flame goes out: hiss and a soft falling pop. */
+  sizzle(): void {
+    noise(0, 0.45, 0.2, 5000);
+    tone({ type: 'sine', freq: 900, to: 300, at: 0.05, dur: 0.3, vol: 0.12 });
   },
   hint(): void {
     tone({ type: 'sine', freq: NOTE(81), dur: 0.15, vol: 0.08 });

@@ -104,16 +104,23 @@ export function timeIsUp(now = performance.now()): boolean {
   return state.limitMin > 0 && now - state.startedAt >= state.limitMin * 60000;
 }
 
+const POLICE_HAT = `<path d="M14 56 Q16 14 60 12 Q104 14 106 56Z" fill="#2f5aa8" stroke="#3a2c2a" stroke-width="5"/>
+  <rect x="8" y="50" width="104" height="18" rx="8" fill="#1f3f7a" stroke="#3a2c2a" stroke-width="5"/>
+  <path d="M60 20 l7 14 h15 l-12 9 l5 15 l-15 -9 l-15 9 l5 -15 l-12 -9 h15Z" fill="#ffd54f" stroke="#3a2c2a" stroke-width="3"/>`;
+
+/** Fire helmet for the end screen of the fire mode (viewBox 0 0 120 80). */
+export const FIRE_HELMET = `<path d="M18 58 Q18 8 60 8 Q102 8 102 58Z" fill="#d8322a" stroke="#3a2c2a" stroke-width="5"/>
+  <path d="M60 10 V56" stroke="#9e2019" stroke-width="7"/>
+  <path d="M6 56 Q60 46 114 56 Q116 68 104 68 Q60 60 16 68 Q4 68 6 56Z" fill="#b3241d" stroke="#3a2c2a" stroke-width="5"/>
+  <path d="M50 20 h20 v18 l-10 8 l-10 -8Z" fill="#ffd54f" stroke="#3a2c2a" stroke-width="3" stroke-linejoin="round"/>`;
+
 /** Shows the stickers earned this session. Holding the corner button starts a new session. */
-export function showEndScreen(app: HTMLElement): void {
+export function showEndScreen(app: HTMLElement, hat = POLICE_HAT): void {
   setPhase('ended');
   const end = document.createElement('div');
   end.className = 'end-screen';
   const n = state.stickers;
-  end.innerHTML = `<div class="end-hat"><svg viewBox="0 0 120 80" width="150" height="100">
-      <path d="M14 56 Q16 14 60 12 Q104 14 106 56Z" fill="#2f5aa8" stroke="#3a2c2a" stroke-width="5"/>
-      <rect x="8" y="50" width="104" height="18" rx="8" fill="#1f3f7a" stroke="#3a2c2a" stroke-width="5"/>
-      <path d="M60 20 l7 14 h15 l-12 9 l5 15 l-15 -9 l-15 9 l5 -15 l-12 -9 h15Z" fill="#ffd54f" stroke="#3a2c2a" stroke-width="3"/></svg></div>
+  end.innerHTML = `<div class="end-hat"><svg viewBox="0 0 120 80" width="150" height="100">${hat}</svg></div>
     <div class="end-stickers">${Array.from({ length: n }, (_, i) => `<div class="end-sticker" style="animation-delay:${(0.4 + i * 0.35).toFixed(2)}s">${stickerSvg(i)}</div>`).join('')}</div>
     <div class="session-btn end-restart"><div class="parent-fill"></div><svg viewBox="0 0 40 40" width="30" height="30"><path d="M30 20 A10 10 0 1 1 26 12" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M22 8 L30 10 L27 18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
   app.appendChild(end);

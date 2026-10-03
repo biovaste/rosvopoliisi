@@ -1,6 +1,7 @@
 import './style.css';
 import { playButtonSvg, rotateSvg } from './art';
-import { randomCostumes, rosvoHead } from './people';
+import { fireButtonSvg } from './fire/art';
+import { firefighterHead, randomCostumes, randomLook, rosvoHead } from './people';
 import { sfx, unlockAudio } from './audio';
 import { updateHint } from './fx';
 import { begin, hintFor, initGame, onDown, onMove, onUp, targets, updateShine } from './game';
@@ -33,8 +34,13 @@ const toLogical = (e: PointerEvent) => ({ x: (e.clientX - view.ox) / view.scale,
 
 const start = document.createElement('div');
 start.className = 'start';
-start.innerHTML = `<div class="start-peek"><svg viewBox="0 0 120 100" width="180" height="150">${rosvoHead(randomCostumes(1)[0])}</svg></div>
-  <div class="play">${playButtonSvg()}</div>`;
+// Two game modes: police (rosvo peeking over a blue play button) and fire brigade (firefighter over a red one).
+start.innerHTML = `<div class="modes">
+  <div class="mode"><div class="start-peek"><svg viewBox="0 0 120 100" width="180" height="150">${rosvoHead(randomCostumes(1)[0])}</svg></div>
+    <div class="play">${playButtonSvg()}</div></div>
+  <div class="mode"><div class="start-peek"><svg viewBox="0 0 120 100" width="180" height="150">${firefighterHead(randomLook())}</svg></div>
+    <div class="play play-fire">${fireButtonSvg()}</div></div>
+</div>`;
 app.appendChild(start);
 initSessionPicker(start);
 
@@ -45,14 +51,25 @@ app.appendChild(rotate);
 
 setPhase('start');
 
+/** Which game is being played; the police town is built at boot and dropped if the fire mode is chosen. */
+let mode: 'police' | 'fire' | null = null;
+
 start.addEventListener('pointerdown', (e) => {
   e.preventDefault();
-  if (!(e.target as HTMLElement).closest('.play') || state.phase !== 'start') return;
+  const btn = (e.target as HTMLElement).closest('.play');
+  if (!btn || state.phase !== 'start' || mode) return;
   unlockAudio();
   sfx.catch();
   start.classList.add('gone');
   setTimeout(() => start.remove(), 600);
-  begin();
+  if (btn.classList.contains('play-fire')) {
+    mode = 'fire';
+    scene.root.remove();
+    void import('./fire/mode').then((m) => m.bootFire(app));
+  } else {
+    mode = 'police';
+    begin();
+  }
 });
 
 // ---------- Game input (single pointer only) ----------
@@ -96,6 +113,7 @@ document.addEventListener(
 // ---------- Per-frame ----------
 
 function frame(now: number): void {
+  if (mode === 'fire') return;
   updateHint(scene, now);
   updateShine(now);
   if (!state.hintOn && state.phase !== 'start' && state.phase !== 'ended' && now - state.lastInput > 10000) {

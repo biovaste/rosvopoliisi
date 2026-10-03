@@ -688,3 +688,47 @@ export function officerSvg(l: Look): string {
     <g transform="translate(0 6)">${headBase(p, l, policeFace(l), policeCap(p))}</g>`;
   return figure(p, k, t, legs(p, k, 154 - t, '#1f2f4f'), upper);
 }
+
+// ---------- Firefighter ----------
+
+function fireHelmet(p: Pen): string {
+  return `<path d="M22 44 Q22 4 60 4 Q98 4 98 44Z" fill="${p.fill('#d8322a')}" ${out()}/>
+    <path d="M60 6 V42" stroke="${tone('#d8322a', -0.3)}" stroke-width="5"/>
+    ${shine('M34 26 Q38 14 50 10')}
+    <path d="M14 42 Q60 34 106 42 Q108 50 100 50 Q60 44 20 50 Q12 50 14 42Z" fill="${p.fill('#b3241d')}" ${out()}/>
+    <path d="M52 14 h16 v14 l-8 6 l-8 -6Z" fill="#ffd54f" stroke="${OUT}" stroke-width="2" stroke-linejoin="round"/>`;
+}
+
+/** Firefighter's head for the truck's cab window. viewBox 0 0 120 100. */
+export function firefighterHead(l: Look): string {
+  const p = new Pen();
+  const h = headBase(p, l, policeFace(l), fireHelmet(p));
+  return p.flush() + h;
+}
+
+/** Full-body firefighter. viewBox 0 0 120 200. `.hose` shows the arms holding the nozzle forward. */
+export function firefighterSvg(l: Look): string {
+  const p = new Pen();
+  const k = l.build;
+  const t = l.height;
+  const coat = '#2c3e66';
+  const lime = '#e6f04a';
+  const glove = '#3a2c2a';
+  const stripes = `<path d="M${28 - k} 132 H${92 + k} M${28 - k} 146 H${92 + k}" stroke="${lime}" stroke-width="7"/>
+    <path d="M${28 - k} 132 H${92 + k} M${28 - k} 146 H${92 + k}" stroke="#bfc4c9" stroke-width="2.5"/>`;
+  const upper = `${torso(p, k, coat, stripes)}
+    <path d="M60 96 V164" stroke="${OUT}" stroke-width="2.5" opacity=".45"/>
+    ${[110, 122].map((y) => `<rect x="56" y="${y}" width="8" height="5" rx="1.5" fill="#bfc4c9" stroke="${OUT}" stroke-width="1.2"/>`).join('')}
+    <g class="arm-rest">${limb(`M${36 - k} 104 Q${27 - k} 120 ${29 - k} 139`, coat, undefined)}${hand(p, 29 - k, 146, 7, -3, glove)}
+      ${limb(`M${84 + k} 104 Q${93 + k} 120 ${91 + k} 139`, coat)}${hand(p, 91 + k, 146, -7, -3, glove)}</g>
+    <g class="arm-hose">
+      <path d="M94 124 L126 108" stroke="${OUT}" stroke-width="14" stroke-linecap="round"/>
+      <path d="M94 124 L126 108" stroke="#8d939a" stroke-width="8" stroke-linecap="round"/>
+      <path d="M118 112 L134 104" stroke="${OUT}" stroke-width="10" stroke-linecap="round"/>
+      <path d="M118 112 L134 104" stroke="#ffca28" stroke-width="5" stroke-linecap="round"/>
+      ${limb(`M${36 - k} 104 Q${60} 132 ${92} 124`, coat)}${hand(p, 96, 122, -4, -6, glove)}
+      ${limb(`M${84 + k} 104 Q${104} 118 ${112} 114`, coat)}${hand(p, 114, 113, -4, -6, glove)}
+    </g>
+    <g transform="translate(0 6)">${headBase(p, l, policeFace(l), fireHelmet(p))}</g>`;
+  return figure(p, k, t, legs(p, k, 154 - t, coat, '#1b1b1b'), upper);
+}

@@ -91,7 +91,13 @@ await page.screenshot({ path: `${OUT}/00-session-picker.png` });
 await tap(pick);
 const saved = await page.evaluate(() => localStorage.getItem('rosvopoliisi.minutes'));
 check(saved === '10', 'chosen session length (10 min) is remembered');
-await tap({ x: VW / 2, y: VH / 2 });
+// The blue play button starts the police game (the red one is the fire brigade).
+await tap(
+  await page.evaluate(() => {
+    const r = document.querySelector('.play:not(.play-fire)').getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  }),
+);
 
 let shot = 1;
 let sawRun = false;

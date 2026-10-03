@@ -8,6 +8,11 @@ The game uses Vite and TypeScript with no game engine. Everything is drawn as
 inline SVG and every sound is synthesised with the Web Audio API, so there are
 no external assets or network requests.
 
+The start screen has two play buttons: blue for *Poliisi ja rosvo* and red for
+the fire brigade mode (*Palokunta*, an MVP; see
+[docs/firefighters.md](docs/firefighters.md) for its design, mechanics and the
+artwork it still needs).
+
 ## How it plays
 
 1. A rosvo steals something from a townsperson (cake, ball, gold, a gem,
@@ -120,7 +125,14 @@ npm run test:e2e                      # iPad size (1024x768)
 VW=844 VH=390 npm run test:e2e        # phone size
 ```
 
-The test uses touch emulation at 1024x768 and plays two full cycles, covering
+The fire mode has its own test, which plays a whole level (three fires):
+
+```sh
+npm run test:fire                     # iPad size
+VW=844 VH=390 npm run test:fire       # phone size
+```
+
+The police test uses touch emulation at 1024x768 and plays two full cycles, covering
 misses, the idle hint, drops that float back, a resting palm during a drag,
 the celebration, the parent panel and portrait mode. It fails on any console
 error. It needs Playwright's Chromium (`npx playwright install chromium`).
@@ -143,3 +155,5 @@ error. It needs Playwright's Chromium (`npx playwright install chromium`).
 - `src/fx.ts`: ripples, confetti, sparkles and the hint hand
 - `src/parent.ts`: hold-to-open parent panel
 - `src/layout.ts`, `src/tween.ts`: coordinates and rAF tweens
+- `src/fire/`: the fire brigade mode (town layout and road network, artwork,
+  scene, game loop, boot), described in `docs/firefighters.md`

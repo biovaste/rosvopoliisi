@@ -7,7 +7,8 @@
     "dev": "vite --host",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host",
-    "test:e2e": "node tests/play.mjs"
+    "test:e2e": "node tests/play.mjs",
+    "test:fire": "node tests/fire.mjs"
   },
   "devDependencies": {
     "playwright": "^1.56.1",

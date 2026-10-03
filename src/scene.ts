@@ -257,10 +257,10 @@ const SKY_CROP = 150;
  * (16:10 tablets, phones) zoom in by trimming up to SKY_CROP of sky from the top,
  * so the playing area stays as large as possible. Returns the transform.
  */
-export function fitStage(stage: HTMLElement): { scale: number; ox: number; oy: number } {
+export function fitStage(stage: HTMLElement, crop = SKY_CROP): { scale: number; ox: number; oy: number } {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const scale = Math.min(vw / W, vh / (H - SKY_CROP));
+  const scale = Math.min(vw / W, vh / (H - crop));
   const ox = (vw - W * scale) / 2;
   const oy = H * scale <= vh ? (vh - H * scale) / 2 : vh - H * scale;
   stage.style.transform = `translate3d(${ox}px,${oy}px,0) scale(${scale})`;

@@ -1,0 +1,319 @@
+/* ---------- Fire mode ---------- */
+
+body[data-mode='fire'] {
+  background: #8cc152;
+}
+
+.fire-game .cloud.c1 {
+  top: 50px;
+}
+
+/* Windows light up in the evening and at night. */
+.fhouse .win-glow {
+  opacity: 0;
+  transition: opacity 1.8s;
+}
+body[data-time='evening'] .fhouse .win-glow {
+  opacity: 0.35;
+}
+body[data-time='night'] .fhouse .win-glow {
+  opacity: 0.6;
+}
+.fhouse .soot {
+  opacity: 0;
+  transition: opacity 1.2s;
+}
+.fhouse.sooty .soot {
+  opacity: 1;
+}
+
+/* ---------- Station ---------- */
+
+.garage-door svg {
+  transform-origin: 50% 0;
+  transition: transform 0.8s ease-in-out;
+}
+.garage-door.open svg {
+  transform: scaleY(0.06);
+}
+
+.alarm {
+  width: 80px;
+  height: 80px;
+}
+.alarm svg {
+  transition: transform 0.12s;
+}
+.alarm.ready svg {
+  animation: pulse 0.9s ease-in-out infinite;
+}
+.alarm.pressed svg {
+  transform: scale(0.86);
+}
+.alarm.nudge svg {
+  animation: shake 0.4s ease-in-out;
+}
+.alarm-ring {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 7px solid #ffeb3b;
+  opacity: 0;
+}
+.alarm.ready .alarm-ring {
+  animation: alarmring 1.2s ease-out infinite;
+}
+@keyframes alarmring {
+  from {
+    transform: scale(0.7);
+    opacity: 0.95;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.flamp .lamp-on {
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.flamp.on .lamp-on {
+  opacity: 1;
+}
+.flamp.on svg {
+  filter: drop-shadow(0 0 6px #ffeb3b);
+}
+
+/* ---------- Truck ---------- */
+
+.truck {
+  width: 180px;
+  height: 100px;
+  transition: opacity 0.3s;
+}
+.truck .tv {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: none;
+}
+.truck .tv.front,
+.truck .tv.back {
+  left: 40px;
+}
+.truck[data-view='side'] .tv.side,
+.truck[data-view='front'] .tv.front,
+.truck[data-view='back'] .tv.back {
+  display: block;
+}
+.truck.moving .tv {
+  animation: carbounce 0.16s ease-in-out infinite alternate;
+}
+body[data-fire='drive'] .truck:not(.dragging):not(.moving) .tv {
+  animation: invite 1s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+.truck.dragging .tv svg {
+  filter: drop-shadow(0 0 8px #fff59d);
+}
+.truck.nudge .tv {
+  animation: shake 0.4s ease-in-out;
+}
+.truck.flash .lights rect {
+  animation: lightflash 0.5s steps(1) infinite;
+}
+@keyframes lightflash {
+  0% {
+    fill: #42a5f5;
+  }
+  50% {
+    fill: #ff5252;
+  }
+}
+.truck .reel {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+.truck.reel-ready .reel {
+  animation: reelwiggle 0.7s ease-in-out infinite;
+}
+@keyframes reelwiggle {
+  0%,
+  100% {
+    transform: rotate(-25deg) scale(1.1);
+  }
+  50% {
+    transform: rotate(25deg) scale(1.3);
+  }
+}
+
+/* ---------- Firefighter ---------- */
+
+.firefighter {
+  width: 120px;
+  height: 200px;
+}
+.firefighter .arm-hose {
+  display: none;
+}
+.firefighter.hose .arm-hose {
+  display: inline;
+}
+.firefighter.hose .arm-rest {
+  display: none;
+}
+
+/* ---------- Fire, smoke, water ---------- */
+
+.fire-layer,
+.hose-layer,
+.water-layer {
+  pointer-events: none;
+}
+.fire-layer > .flame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 60px;
+  height: 80px;
+  transform-origin: 30px 76px;
+  transition: opacity 0.4s;
+}
+.flame.gone {
+  opacity: 0;
+}
+.flame .fl {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.flame .fl1 {
+  animation: flick 0.5s ease-in-out infinite alternate;
+}
+.flame .fl2 {
+  animation: flick 0.37s ease-in-out infinite alternate-reverse;
+}
+.flame .fl3 {
+  animation: flick 0.29s ease-in-out infinite alternate;
+}
+@keyframes flick {
+  from {
+    transform: scale(1, 1) skewX(-3deg);
+  }
+  to {
+    transform: scale(0.92, 1.08) skewX(4deg);
+  }
+}
+
+.stage > .puff {
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.puff.smoke {
+  background: radial-gradient(circle at 40% 40%, #c9c9c9, #8f8f8f 70%, rgba(143, 143, 143, 0) 72%);
+  animation: smokerise 2.8s ease-out forwards;
+}
+.puff.steam {
+  background: radial-gradient(circle at 40% 40%, #fff, #e3f2fd 70%, rgba(227, 242, 253, 0) 72%);
+  animation: steamrise 1.2s ease-out forwards;
+}
+@keyframes smokerise {
+  from {
+    transform: translate3d(0, 0, 0) scale(0.5);
+    opacity: 0.85;
+  }
+  to {
+    transform: translate3d(var(--dx), -170px, 0) scale(2.2);
+    opacity: 0;
+  }
+}
+@keyframes steamrise {
+  from {
+    transform: translate3d(0, 0, 0) scale(0.6);
+    opacity: 0.95;
+  }
+  to {
+    transform: translate3d(var(--dx), -90px, 0) scale(1.8);
+    opacity: 0;
+  }
+}
+
+.hose-out {
+  stroke: #3a2c2a;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+.hose-in {
+  stroke: #f4c430;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.water {
+  stroke: #4fc3f7;
+  stroke-width: 11;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+.water-core {
+  stroke: #fff;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 10 16;
+  animation: waterflow 0.3s linear infinite;
+  opacity: 0.85;
+}
+@keyframes waterflow {
+  to {
+    stroke-dashoffset: -26;
+  }
+}
+.splash {
+  opacity: 0;
+  pointer-events: none;
+}
+.splash.on {
+  opacity: 1;
+}
+.splash i {
+  position: absolute;
+  left: -7px;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #81d4fa;
+  border: 2px solid #fff;
+  transform: rotate(var(--a)) translate3d(0, 0, 0);
+}
+.splash.on i {
+  animation: droplet 0.45s ease-out infinite;
+}
+@keyframes droplet {
+  from {
+    transform: rotate(var(--a)) translate3d(6px, 0, 0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--a)) translate3d(40px, 0, 0) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.bell-bubble {
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.bell-bubble.on {
+  opacity: 1;
+}
+.bell-bubble.on svg {
+  animation: wiggle 0.9s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}

@@ -1,8 +1,13 @@
 // Visual effects: touch ripples, confetti, sparkles and the hint hand.
 
 import type { Pt } from './layout';
-import type { Scene } from './scene';
-import { lerp } from './tween';
+import { lerp, type Sprite } from './tween';
+
+/** Anything with an effects layer and a hint hand (the police or the fire scene). */
+export interface FxHost {
+  fx: HTMLElement;
+  hand: Sprite;
+}
 
 const COLORS = ['#ffd54f', '#f06292', '#64b5f6', '#81c784', '#ba68c8', '#ff8a65', '#ffffff'];
 
@@ -15,7 +20,7 @@ function spawn(fx: HTMLElement, cls: string, x: number, y: number): HTMLDivEleme
 }
 
 /** Immediate feedback ring at a touch point. */
-export function ripple(scene: Scene, p: Pt, good = true): void {
+export function ripple(scene: FxHost, p: Pt, good = true): void {
   const holder = spawn(scene.fx, 'ripple-at', p.x, p.y);
   const r = document.createElement('div');
   r.className = good ? 'ripple' : 'ripple soft';
@@ -23,7 +28,7 @@ export function ripple(scene: Scene, p: Pt, good = true): void {
   r.addEventListener('animationend', () => holder.remove());
 }
 
-export function sparkle(scene: Scene, p: Pt, n = 8): void {
+export function sparkle(scene: FxHost, p: Pt, n = 8): void {
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
     const d = spawn(scene.fx, 'spark', p.x, p.y);
@@ -41,7 +46,7 @@ export function sparkle(scene: Scene, p: Pt, n = 8): void {
   }
 }
 
-export function confetti(scene: Scene): void {
+export function confetti(scene: FxHost): void {
   for (let i = 0; i < 70; i++) {
     const x = Math.random() * 1200;
     const d = spawn(scene.fx, 'confetti', x, -40);
@@ -59,7 +64,7 @@ export function confetti(scene: Scene): void {
   }
 }
 
-export function hearts(scene: Scene, p: Pt): void {
+export function hearts(scene: FxHost, p: Pt): void {
   const d = spawn(scene.fx, 'heart', p.x - 22, p.y);
   d.innerHTML = `<svg viewBox="0 0 50 46" width="44" height="40"><path d="M25 44 Q2 28 3 14 Q4 2 15 2 Q22 2 25 10 Q28 2 35 2 Q46 2 47 14 Q48 28 25 44Z" fill="#f06292" stroke="#2b2b3a" stroke-width="3"/></svg>`;
   const anim = d.animate(
@@ -80,7 +85,7 @@ export type HintKind = { type: 'tap'; at: Pt } | { type: 'drag'; from: Pt; to: P
 let hint: HintKind | null = null;
 let hintStart = 0;
 
-export function showHint(scene: Scene, h: HintKind): void {
+export function showHint(scene: FxHost, h: HintKind): void {
   hint = h;
   hintStart = performance.now();
   scene.hand.scale = 1;
@@ -89,14 +94,14 @@ export function showHint(scene: Scene, h: HintKind): void {
   scene.hand.el.classList.toggle('tapping', h.type === 'tap');
 }
 
-export function hideHint(scene: Scene): void {
+export function hideHint(scene: FxHost): void {
   hint = null;
   scene.hand.el.style.opacity = '';
   scene.hand.el.classList.remove('on', 'tapping');
 }
 
 /** Called every frame. */
-export function updateHint(scene: Scene, now: number): void {
+export function updateHint(scene: FxHost, now: number): void {
   if (!hint) return;
   if (hint.type === 'tap') {
     scene.hand.at(hint.at.x, hint.at.y);

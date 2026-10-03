@@ -556,6 +556,19 @@ body[data-phase='returning'] .item.glow .actor-inner {
   height: 240px;
   animation: pulse 1.4s ease-in-out infinite;
 }
+.start .modes {
+  display: flex;
+  align-items: flex-end;
+  gap: 9vw;
+}
+.start .mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.start .play-fire {
+  animation-delay: -0.7s;
+}
 .start-peek {
   margin-bottom: -20px;
   animation: look 2s ease-in-out infinite;
