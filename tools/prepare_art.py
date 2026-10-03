@@ -51,6 +51,8 @@ PROPS = {
     'planter': {'w': 175, 'pockets': False},
     'fence': {'w': 130, 'pockets': True},
     'bench': {'w': 150, 'pockets': True},
+    'barrels': {'w': 124, 'pockets': False},
+    'sacks': {'w': 136, 'pockets': False},
     # Police van: source-pixel rects for the cab window (driver), rear window
     # (rosvot) and roof light bar, converted to logical px for the overlays.
     'van': {'w': 250, 'pockets': False, 'parts': {

@@ -160,7 +160,14 @@ const seam = (i: number): number => {
 /** Street lamps on the back sidewalk stand in the gaps between houses (bottom at y 502). */
 export const LAMPS: number[] = [seam(0), seam(2)];
 /** A bigger lamp on the near sidewalk, across the street. */
-export const NEAR_LAMP: Pt & { k: number } = { x: 900, y: 613, k: 1.2 };
+export const NEAR_LAMP: Pt & { k: number } = { x: nearLampX(), y: 613, k: 1.2 };
+
+/** Between the small tree and the market spot, and never in front of a door (it would hide the person there). */
+function nearLampX(): number {
+  const doors = town.buildings.map((b) => doorOf(b.kind).x);
+  for (const x of [900, 880, 920, 864, 940, 950]) if (doors.every((d) => Math.abs(x - d) >= 52)) return x;
+  return 900;
+}
 
 /** Mailbox spot on the back sidewalk: varies per session but never by a lamp or a door. */
 function mailboxX(): number {
@@ -203,8 +210,8 @@ export const SPOTS: SpotDef[] = [
   // Market square: small things on the cobbles (planter, crates, sacks, barrels).
   withArt(spot('planter', 'stash', 852, 795, 120, 76, 26), 'planter', 0.3),
   withArt(spot('crates', 'both', 962, 735, 160, 140, 30, 735), 'crates', 0.07),
-  spot('sacks', 'stash', 1062, 798, 130, 84, 30),
-  spot('barrels', 'both', 1140, 704, 116, 100, 24),
+  withArt(spot('sacks', 'stash', 1062, 798, 130, 84, 30), 'sacks', 0.35),
+  withArt(spot('barrels', 'both', 1140, 704, 116, 100, 24), 'barrels', 0.25),
 ];
 
 export const peekW = (s: SpotDef): number => PEEK_W * s.s;
