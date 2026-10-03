@@ -40,7 +40,7 @@ function syncItem(o: Owner): void {
 }
 
 function create(role: Role, look: Owner['look'], pos: Pt): Owner {
-  const size = role === 'kid' || role === 'kid2' ? 0.84 : role === 'dog' ? 0.8 : 0.94 + Math.random() * 0.12;
+  const size = role === 'kid' || role === 'kid2' ? 0.84 : role === 'dog' ? 0.8 : role === 'cat' ? 0.66 : 0.94 + Math.random() * 0.12;
   const o: Owner = { id: nextId++, role, look, item: ROLE_ITEM[role], pos: { ...pos }, home: !!ROLE_HOME[role], size, robbed: false, done: false, walking: false };
   const sprite = makeActor(`owner ${role}`, `<div class="actor-inner">${ownerSvg(role, look)}</div>`);
   const bubble = document.createElement('div');

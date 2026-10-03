@@ -43,7 +43,7 @@ PROPS = {
     'tree-autumn': {'w': 260, 'pockets': False},
     'bush': {'w': 200, 'pockets': False},
     'crates': {'w': 160, 'pockets': False},
-    'slide': {'w': 220, 'pockets': True},
+    'slide': {'w': 280, 'pockets': True},
 }
 
 

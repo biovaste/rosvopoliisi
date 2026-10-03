@@ -7,7 +7,7 @@ export { OUT };
 
 // ---------- Items ----------
 
-export type ItemKind = 'cake' | 'ball' | 'flowers' | 'bone' | 'icecream' | 'teddy' | 'gold' | 'gem' | 'jewels' | 'parcel' | 'watering';
+export type ItemKind = 'cake' | 'ball' | 'flowers' | 'bone' | 'icecream' | 'teddy' | 'gold' | 'gem' | 'jewels' | 'parcel' | 'watering' | 'yarn' | 'toolbox';
 
 export function itemSvg(kind: ItemKind): string {
   const s = (inner: string) => `<svg viewBox="0 0 100 100" width="100" height="100">${inner}</svg>`;
@@ -87,6 +87,16 @@ export function itemSvg(kind: ItemKind): string {
         <path d="M86 30 L100 14 L100 72 L86 88Z" fill="#c38a52" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
         <path d="M50 30 V88 M14 58 H86" stroke="#e53935" stroke-width="6"/>
         <path d="M40 24 Q50 10 50 30 Q50 10 60 24" fill="none" stroke="#e53935" stroke-width="4"/>`);
+    case 'yarn':
+      return s(`<path d="M74 70 Q92 84 84 94 Q76 100 90 98" fill="none" stroke="#ec407a" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="48" cy="56" r="32" fill="#f06292" stroke="${OUT}" stroke-width="4"/>
+        <path d="M22 44 Q48 30 74 50 M18 60 Q48 44 78 66 M24 76 Q50 60 72 80 M36 26 Q30 56 44 86 M54 24 Q46 56 62 88" fill="none" stroke="#c2185b" stroke-width="3" opacity=".8"/>
+        <path d="M30 36 Q38 28 48 28" stroke="#fff" stroke-width="4" fill="none" opacity=".5" stroke-linecap="round"/>`);
+    case 'toolbox':
+      return s(`<path d="M36 34 Q36 20 50 20 Q64 20 64 34" fill="none" stroke="${OUT}" stroke-width="9"/><path d="M36 34 Q36 20 50 20 Q64 20 64 34" fill="none" stroke="#90a4ae" stroke-width="5"/>
+        <path d="${wob([[10, 34], [90, 34], [90, 86], [10, 86]], 1)}" fill="#e53935" stroke="${OUT}" stroke-width="4"/>
+        <path d="M10 50 H90" stroke="${OUT}" stroke-width="3"/><rect x="42" y="44" width="16" height="12" rx="3" fill="#cfd8dc" stroke="${OUT}" stroke-width="2.5"/>
+        <path d="M16 38 H60" stroke="#fff" stroke-width="3" opacity=".45" stroke-linecap="round"/>`);
     case 'watering':
       return s(`<path d="M24 40 L76 40 L72 88 L28 88Z" fill="#4db6ac" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
         <path d="M74 52 L96 30" stroke="${OUT}" stroke-width="10" stroke-linecap="round"/><path d="M74 52 L96 30" stroke="#4db6ac" stroke-width="5" stroke-linecap="round"/>

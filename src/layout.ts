@@ -141,7 +141,7 @@ export const SPOTS: SpotDef[] = [
   backTree,
   roof,
   spot('mailbox', 'stash', 548, 500, 60, 90, 22),
-  withArt(spot('slide', 'rosvo', 150, 770, 220, 170, 40), 'slide', 0.3, 0.3),
+  withArt(spot('slide', 'rosvo', 140, 776, 220, 170, 40), 'slide', 0.3, 0.3),
   spot('tunnel', 'both', 330, 790, 170, 96, 30),
   withArt(spot('bush', 'both', 500, 795, 200, 120, 50), 'bush', 0.4),
   withArt(spot('tree', 'both', 670, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),

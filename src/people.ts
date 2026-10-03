@@ -254,8 +254,8 @@ export function sackSvg(c: Costume): string {
 
 // ---------- Townspeople ----------
 
-export type Role = 'baker' | 'kid' | 'kid2' | 'elder' | 'dog' | 'vendor' | 'jeweler' | 'banker' | 'fancy' | 'postie' | 'gardener';
-export const ROLES: Role[] = ['baker', 'kid', 'kid2', 'elder', 'dog', 'vendor', 'jeweler', 'banker', 'fancy', 'postie', 'gardener'];
+export type Role = 'baker' | 'kid' | 'kid2' | 'elder' | 'dog' | 'cat' | 'vendor' | 'jeweler' | 'banker' | 'fancy' | 'postie' | 'gardener' | 'worker';
+export const ROLES: Role[] = ['baker', 'kid', 'kid2', 'elder', 'dog', 'cat', 'vendor', 'jeweler', 'banker', 'fancy', 'postie', 'gardener', 'worker'];
 
 /** Roles that always appear at the door of their own building. Others stand anywhere. */
 export const ROLE_HOME: Partial<Record<Role, BuildingKind>> = {
@@ -277,6 +277,8 @@ export const ROLE_ITEM: Record<Role, ItemKind> = {
   fancy: 'jewels',
   postie: 'parcel',
   gardener: 'watering',
+  cat: 'yarn',
+  worker: 'toolbox',
 };
 
 function faces(cx: number, cy: number): string {
@@ -358,10 +360,15 @@ function outfit(role: Role): Outfit {
       };
     case 'postie':
       return {
-        shirt: '#ffb300',
+        shirt: '#ff6b1a',
         legs: '#1e3a5f',
-        hat: `<path d="M30 36 Q32 12 60 12 Q88 12 90 36Z" fill="#1e3a5f" stroke="${OUT}" stroke-width="4"/><path d="M84 34 Q104 32 106 40 L86 40Z" fill="#1e3a5f" stroke="${OUT}" stroke-width="3"/>`,
-        extra: `<path d="M34 96 L86 146" stroke="#6d4c41" stroke-width="6"/>`,
+        hat: `<path d="M30 36 Q32 12 60 12 Q88 12 90 36Z" fill="#1e3a5f" stroke="${OUT}" stroke-width="4"/><path d="M84 34 Q104 32 106 40 L86 40Z" fill="#1e3a5f" stroke="${OUT}" stroke-width="3"/>
+          <circle cx="60" cy="24" r="5" fill="#ff6b1a" stroke="${OUT}" stroke-width="2"/>`,
+        // Mail bag on a strap, with a letter peeking out.
+        extra: `<path d="M36 96 L84 140" stroke="${OUT}" stroke-width="8" stroke-linecap="round"/><path d="M36 96 L84 140" stroke="#6d4c41" stroke-width="4" stroke-linecap="round"/>
+          <path d="M70 126 h34 v28 q-17 6 -34 0Z" fill="#1e3a5f" stroke="${OUT}" stroke-width="3"/>
+          <path d="M74 122 h18 v10 h-18Z" fill="#fff" stroke="${OUT}" stroke-width="2" transform="rotate(-8 83 127)"/>
+          <path d="M70 134 q17 8 34 0" fill="none" stroke="${OUT}" stroke-width="2.5"/>`,
       };
     case 'gardener':
       return {
@@ -370,13 +377,26 @@ function outfit(role: Role): Outfit {
         hat: `<ellipse cx="60" cy="34" rx="44" ry="9" fill="#f3d27a" stroke="${OUT}" stroke-width="3.5"/><path d="M36 34 Q38 12 60 12 Q82 12 84 34Z" fill="#f3d27a" stroke="${OUT}" stroke-width="3.5"/>`,
         extra: `<path d="M38 112 H82 V156 H38Z" fill="#a1887f" stroke="${OUT}" stroke-width="3"/>`,
       };
+    case 'worker':
+      return {
+        shirt: '#ff9800',
+        legs: '#3e4f63',
+        hat: `<path d="M24 38 Q26 6 60 6 Q94 6 96 38Z" fill="#ffd600" stroke="${OUT}" stroke-width="4"/>
+          <rect x="18" y="34" width="84" height="9" rx="4" fill="#ffd600" stroke="${OUT}" stroke-width="3.5"/>
+          <path d="M60 8 V34" stroke="${OUT}" stroke-width="2.5" opacity=".4"/><path d="M36 22 Q42 12 52 10" stroke="#fff" stroke-width="3" fill="none" opacity=".6"/>`,
+        // High-visibility vest stripes.
+        extra: `<path d="M30 120 H90 M30 134 H90" stroke="#e0e0e0" stroke-width="6"/><path d="M30 120 H90 M30 134 H90" stroke="${OUT}" stroke-width="1" opacity=".3"/>
+          <path d="M46 94 V156 M74 94 V156" stroke="#e0e0e0" stroke-width="5"/>`,
+      };
     case 'dog':
+    case 'cat':
       return { shirt: '', legs: '' };
   }
 }
 
 export function ownerSvg(role: Role, look: Look): string {
   if (role === 'dog') return dogSvg();
+  if (role === 'cat') return catSvg();
   const o = outfit(role);
   const l: Look = o.hairColor ? { ...look, hairColor: o.hairColor } : look;
   const skin = l.skin;
@@ -401,6 +421,31 @@ export function ownerSvg(role: Role, look: Look): string {
     <path d="M50 93 L60 104 L70 93" fill="none" stroke="${OUT}" stroke-width="2.5" opacity=".45"/>
     ${o.extra && role !== 'elder' ? o.extra : ''}
     <g class="head" style="animation-delay:-${(Math.random() * 6).toFixed(1)}s" transform="translate(0 2)">${headBase(l, faces(60, 60), (role === 'elder' ? o.extra : '') + (o.hat ?? ''))}</g>
+  </svg>`;
+}
+
+const CAT_FUR = ['#f2a65a', '#9e9e9e', '#4a4a4a', '#e8d9c4'];
+
+function catSvg(): string {
+  const fur = pick(CAT_FUR);
+  const dark = tone(fur, -0.25);
+  const stripes = fur === '#f2a65a' || fur === '#9e9e9e';
+  return `<svg viewBox="0 0 120 200" width="120" height="200">
+    <ellipse class="shadow" cx="60" cy="194" rx="40" ry="7" fill="#000" opacity=".18"/>
+    <path class="tail" d="M84 182 Q118 176 112 140 Q108 120 98 126" fill="none" stroke="${OUT}" stroke-width="13" stroke-linecap="round"/>
+    <path class="tail" d="M84 182 Q118 176 112 140 Q108 120 98 126" fill="none" stroke="${fur}" stroke-width="7" stroke-linecap="round"/>
+    <path d="M30 192 Q24 130 60 124 Q96 130 90 192Z" fill="${fur}" stroke="${OUT}" stroke-width="4"/>
+    ${stripes ? `<path d="M40 150 q8 4 14 0 M66 150 q8 4 14 0 M38 168 q8 4 14 0 M68 168 q8 4 14 0" stroke="${dark}" stroke-width="4" fill="none" stroke-linecap="round"/>` : ''}
+    <ellipse cx="60" cy="168" rx="14" ry="20" fill="#fff" opacity=".55"/>
+    <ellipse cx="46" cy="190" rx="10" ry="6" fill="${fur}" stroke="${OUT}" stroke-width="3"/><ellipse cx="74" cy="190" rx="10" ry="6" fill="${fur}" stroke="${OUT}" stroke-width="3"/>
+    <path d="M30 96 L34 58 L54 80Z M90 96 L86 58 L66 80Z" fill="${fur}" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M36 88 L37 68 L48 80Z M84 88 L83 68 L72 80Z" fill="#f8bbd0"/>
+    <ellipse cx="60" cy="100" rx="32" ry="28" fill="${fur}" stroke="${OUT}" stroke-width="4"/>
+    ${stripes ? `<path d="M52 74 l2 10 M60 72 v10 M68 74 l-2 10" stroke="${dark}" stroke-width="3.5" stroke-linecap="round"/>` : ''}
+    <path d="M56 106 h8 l-4 5Z" fill="#f48fb1" stroke="${OUT}" stroke-width="1.5"/>
+    <path d="M30 104 h18 M30 112 l18 -3 M90 104 h-18 M90 112 l-18 -3" stroke="${OUT}" stroke-width="1.6" opacity=".6"/>
+    <rect x="40" y="124" width="40" height="7" rx="3.5" fill="#42a5f5" stroke="${OUT}" stroke-width="2"/>
+    ${faces(60, 98)}
   </svg>`;
 }
 
