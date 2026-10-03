@@ -50,7 +50,21 @@ export const TILES = {
 const S = meta.skies as Record<string, { w: number; h: number }>;
 const skyArt = (name: string): TileArt | null => (S[name] && url(name) ? { url: url(name) as string, ...S[name] } : null);
 
-const P = (meta as { props?: Record<string, { w: number; h: number }> }).props ?? {};
+type Rect = { x: number; y: number; w: number; h: number };
+const P = (meta as { props?: Record<string, { w: number; h: number } & Record<string, unknown>> }).props ?? {};
+
+export interface VanArt extends TileArt {
+  cab: Rect;
+  rear: Rect;
+  lights: Rect;
+}
+
+/** The police van picture with its window and light-bar positions, if present. */
+export function vanArt(): VanArt | null {
+  const v = P.van as unknown as VanArt | undefined;
+  const u = url('van');
+  return v && u && v.cab ? { ...v, url: u } : null;
+}
 
 /** Generated hiding-spot props (trees, bush, crates, slide), if present. */
 export function propArt(name: string): TileArt | null {

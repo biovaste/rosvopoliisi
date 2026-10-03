@@ -44,6 +44,14 @@ PROPS = {
     'bush': {'w': 200, 'pockets': False},
     'crates': {'w': 160, 'pockets': False},
     'slide': {'w': 280, 'pockets': True},
+    'tunnel': {'w': 230, 'pockets': False},
+    'planter': {'w': 175, 'pockets': False},
+    'fence': {'w': 130, 'pockets': True},
+    'bench': {'w': 150, 'pockets': True},
+    # Police van: source-pixel rects for the cab window (driver), rear window
+    # (rosvot) and roof light bar, converted to logical px for the overlays.
+    'van': {'w': 250, 'pockets': False, 'parts': {
+        'cab': (1150, 335, 1362, 530), 'rear': (815, 345, 1080, 526), 'lights': (1018, 172, 1198, 232)}},
 }
 
 
@@ -114,11 +122,16 @@ def prop(name, cfg, meta):
     path = os.path.join(SRC, f'{name}.jpg')
     if not os.path.exists(path):
         return
-    img, _ = cut_out(path, [], [], cfg['pockets'])
+    img, bbox = cut_out(path, [], [], cfg['pockets'])
     lw = cfg['w']
-    lh = round(img.height * lw / img.width)
+    k = lw / img.width
+    lh = round(img.height * k)
     img.resize((lw * SCALE, lh * SCALE), Image.LANCZOS).save(os.path.join(OUT, f'{name}.webp'), quality=88, method=6)
     meta['props'][name] = {'w': lw, 'h': lh}
+    for part, (x0, y0, x1, y1) in cfg.get('parts', {}).items():
+        meta['props'][name][part] = {
+            'x': round((x0 - bbox[0]) * k, 1), 'y': round((y0 - bbox[1]) * k, 1),
+            'w': round((x1 - x0) * k, 1), 'h': round((y1 - y0) * k, 1)}
 
 
 def tile(name, src, quadrant, size, mirror_v=False):

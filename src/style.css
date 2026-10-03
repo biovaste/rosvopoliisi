@@ -299,7 +299,7 @@ body[data-time='night'] .lamp .glow {
   animation: blink 0.3s steps(1) infinite reverse;
   animation-delay: 0.15s;
 }
-.car.flash > svg {
+.car.flash .car-body {
   animation: carbounce 0.3s ease-in-out infinite alternate;
 }
 
@@ -915,7 +915,7 @@ body[data-phase='returning'] .item.glow .actor-inner {
 .car.driving .wheel {
   animation: spin 0.35s linear infinite;
 }
-.car.driving > svg {
+.car.driving .car-body {
   animation: carbounce 0.18s ease-in-out infinite alternate;
 }
 
@@ -1282,4 +1282,39 @@ body[data-time='night'] .bird {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* ---------- Police van picture ---------- */
+
+.car-body {
+  position: relative;
+}
+.van-img,
+.van-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+}
+.van-lights {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 40px;
+  display: flex;
+  pointer-events: none;
+}
+.van-lights > div {
+  flex: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(120, 180, 255, 0.95) 0%, rgba(41, 121, 255, 0.6) 40%, rgba(41, 121, 255, 0) 70%);
+  opacity: 0;
+  transform: scale(1.8);
+}
+.car.flash .van-lights .l-red {
+  animation: blink 0.3s steps(1) infinite;
+}
+.car.flash .van-lights .l-blue {
+  animation: blink 0.3s steps(1) infinite reverse;
+  animation-delay: 0.15s;
 }

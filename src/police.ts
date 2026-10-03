@@ -3,7 +3,7 @@
 
 import { makeActor, stand, walkTo } from './actors';
 import { sfx } from './audio';
-import { CAR, DOOR, OFFICER_IDLE, depth, type Pt } from './layout';
+import { CAR, CAR_DOOR, DOOR, OFFICER_IDLE, depth, type Pt } from './layout';
 import { officerSvg } from './people';
 import type { Scene } from './scene';
 import { town } from './town';
@@ -79,7 +79,7 @@ export async function backToIdle(): Promise<void> {
 
 export async function intoCar(): Promise<void> {
   officer.el.classList.remove('escorting');
-  await walkTo(officer, { x: CAR.x + 200, y: CAR.y + 140 });
+  await walkTo(officer, CAR_DOOR);
   await fadeShrink(officer);
   scene.car.classList.add('driver-in');
 }
@@ -87,7 +87,7 @@ export async function intoCar(): Promise<void> {
 export async function outOfCar(): Promise<void> {
   scene.car.classList.remove('driver-in');
   officer.el.style.opacity = '1';
-  stand(officer, { x: CAR.x + 200, y: CAR.y + 140 });
+  stand(officer, CAR_DOOR);
   await walkTo(officer, OFFICER_IDLE);
   officer.flip = true;
   officer.render();
@@ -99,7 +99,7 @@ export async function driveAway(): Promise<void> {
   sfx.siren();
   scene.car.classList.add('driving');
   await car.moveTo(1350, CAR.y, 2600, 0, (t) => t * t);
-  (scene.car.querySelector('.riders') as SVGGElement).innerHTML = '';
+  scene.riders.innerHTML = '';
   car.at(-320, CAR.y);
   await wait(400);
   await car.moveTo(CAR.x, CAR.y, 1500, 0, ease.out);

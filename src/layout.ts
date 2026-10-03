@@ -2,7 +2,7 @@
 // Things further up the screen are further away and drawn smaller (see depth()).
 
 import type { BuildingKind } from './buildings';
-import { BUILDING_ART, propArt, roofAt, type BuildingArt, type TileArt } from './images';
+import { BUILDING_ART, propArt, roofAt, vanArt, type BuildingArt, type TileArt } from './images';
 import { town } from './town';
 
 export const W = 1200;
@@ -55,7 +55,12 @@ export const DOOR: Pt = { x: STATION.x + stationArt.door * stationArt.w, y: 472 
 export const CELLS = (stationArt.cells ?? []).map((c) => ({ x: STATION.x + c.x, y: STATION.y + c.y, w: c.w, h: c.h }));
 export const WINDOWS: Pt[] = CELLS.map((c) => ({ x: c.x + c.w / 2, y: c.y + c.h / 2 }));
 /** Police car, top-left corner of its 260x140 drawing (wheels on the street). */
-export const CAR = { x: 40, y: 451 };
+const van = vanArt();
+/** Police car / van: top-left corner and size (wheels on the street at y 585). */
+export const CAR = van ? { x: 36, y: 585 - van.h, w: van.w, h: van.h } : { x: 40, y: 451, w: 260, h: 134 };
+/** Where rosvot climb in (the back) and where the officer gets in (the driver's door). */
+export const CAR_BACK: Pt = { x: CAR.x + CAR.w * 0.25, y: 592 };
+export const CAR_DOOR: Pt = { x: CAR.x + CAR.w * 0.72, y: 594 };
 export const OFFICER_IDLE: Pt = { x: 336, y: 600 };
 export const JAIL_TARGET: Pt = { x: 180, y: 400 };
 export const JAIL_RADIUS = 220;
@@ -142,10 +147,10 @@ export const SPOTS: SpotDef[] = [
   roof,
   spot('mailbox', 'stash', 548, 500, 60, 90, 22),
   withArt(spot('slide', 'rosvo', 140, 776, 220, 170, 40), 'slide', 0.3, 0.3),
-  spot('tunnel', 'both', 330, 790, 170, 96, 30),
+  withArt(spot('tunnel', 'both', 318, 792, 170, 96, 30), 'tunnel', 0.12),
   withArt(spot('bush', 'both', 500, 795, 200, 120, 50), 'bush', 0.4),
   withArt(spot('tree', 'both', 670, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
-  spot('planter', 'stash', 790, 795, 120, 76, 26),
+  withArt(spot('planter', 'stash', 790, 795, 120, 76, 26), 'planter', 0.3),
   withArt(spot('crates', 'both', 900, 760, 160, 140, 30), 'crates', 0.07),
   spot('sacks', 'stash', 1010, 798, 130, 84, 30),
   spot('stall', 'rosvo', 1110, 750, 190, 96, 22),

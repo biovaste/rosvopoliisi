@@ -5,7 +5,7 @@ import * as art from './art';
 import { makeActor, stand, walkTo } from './actors';
 import { sfx } from './audio';
 import { confetti, hearts, hideHint, ripple, showHint, sparkle } from './fx';
-import { CAR, DOOR, JAIL_RADIUS, JAIL_TARGET, OWNER_RADIUS, SHELF, SPOTS, WINDOWS, clamp, depth, dist, peekFeet, peekH, spotRect, type Pt, type SpotDef } from './layout';
+import { CAR_BACK, DOOR, JAIL_RADIUS, JAIL_TARGET, OWNER_RADIUS, SHELF, SPOTS, WINDOWS, clamp, depth, dist, peekFeet, peekH, spotRect, type Pt, type SpotDef } from './layout';
 import { fadeOutCrowd, handPos, ownerById, pickVictim, spawnCrowd, swapSomeone, syncItem, view, wander } from './npcs';
 import { randomCostumes, rosvoHead, rosvoSvg, sackSvg, shuffle, type Costume } from './people';
 import { backToIdle, cuff, driveAway, escortIn, follow, intoCar, officer, outOfCar } from './police';
@@ -593,15 +593,16 @@ async function rosvotToCar(): Promise<void> {
     hearts(scene, { x: s.x, y: s.y - 210 * s.scale });
   }
   await wait(1500);
-  const riders = scene.car.querySelector('.riders') as SVGGElement;
+  const riders = scene.riders;
   riders.setAttribute('class', 'riders sorry');
   riders.innerHTML = '';
   for (let i = 0; i < 3; i++) {
     const s = sprites[i];
     s.el.classList.remove('bow');
-    await walkTo(s, { x: CAR.x + 110, y: CAR.y + 130 }, { hop: 70, speed: 500 });
+    await walkTo(s, CAR_BACK, { hop: 70, speed: 500 });
     s.el.remove();
-    riders.insertAdjacentHTML('beforeend', `<g transform="translate(${56 + i * 18} 28) scale(.32)">${rosvoHead(state.costumes[i])}</g>`);
+    const at = scene.riderAt(i);
+    if (at) riders.insertAdjacentHTML('beforeend', `<g transform="${at}">${rosvoHead(state.costumes[i])}</g>`);
     sfx.pickup();
   }
   await wait(300);

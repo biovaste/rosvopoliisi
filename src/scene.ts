@@ -3,7 +3,7 @@
 
 import * as art from './art';
 import { backdropSvg, chimneySpotSvg, treeSvg } from './buildings';
-import { SKY, TILES } from './images';
+import { SKY, TILES, propArt, vanArt } from './images';
 import { BASE_Y, CAR, CELLS, H, SHELF, SPOTS, STATION, W, peekH, peekW, placeBuilding, type Placed, type SpotDef } from './layout';
 import { policeHead } from './people';
 import { town } from './town';
@@ -29,6 +29,10 @@ export interface Scene {
   windows: WindowView[];
   car: HTMLElement;
   carSprite: Sprite;
+  /** Group in the back window where caught rosvot ride. */
+  riders: SVGGElement;
+  /** SVG transform for the i-th rider's head, or null if there is no room for it. */
+  riderAt: (i: number) => string | null;
   fx: HTMLElement;
   shelf: HTMLElement;
   hand: Sprite;
@@ -168,11 +172,19 @@ export function buildScene(app: HTMLElement): Scene {
   // Street furniture.
   place(div('prop lamp', stage, art.lampSvg()), 506, 244, 502);
   place(div('prop lamp', stage, art.lampSvg()), 1042, 244, 502);
-  place(div('prop', stage, art.benchSvg()), 12, 686, 736);
+  const bench = propArt('bench');
+  if (bench) picture(stage, { art: { ...bench, door: 0, roof: [] }, x: 8, y: 738 - bench.h }, 738);
+  else place(div('prop', stage, art.benchSvg()), 12, 686, 736);
   place(div('prop', stage, art.stallBackSvg()), 1015, 548, 600);
   if (town.fence) {
-    place(div('prop', stage, art.fenceSvg(140)), 392, 574, 619);
-    place(div('prop', stage, art.fenceSvg(96)), 1104, 578, 619);
+    const fence = propArt('fence');
+    if (fence) {
+      picture(stage, { art: { ...fence, door: 0, roof: [] }, x: 400, y: 620 - fence.h }, 619);
+      picture(stage, { art: { ...fence, door: 0, roof: [] }, x: 1090, y: 624 - fence.h }, 619);
+    } else {
+      place(div('prop', stage, art.fenceSvg(140)), 392, 574, 619);
+      place(div('prop', stage, art.fenceSvg(96)), 1104, 578, 619);
+    }
   }
 
   // Hiding spots.
@@ -207,11 +219,10 @@ export function buildScene(app: HTMLElement): Scene {
   // Time-of-day tint over the whole town.
   for (const t of ['evening', 'night']) div(`tint ${t}`, stage).style.zIndex = String(Z.tint);
 
-  const car = div('prop car', stage, art.carSvg(policeHead(town.police)));
-  div('car-lights', car, art.carLights());
+  const { car, riderAt } = buildCar(stage);
   const carSprite = new Sprite(car, 0, 0);
   carSprite.depthZ = true;
-  carSprite.zAdd = 134;
+  carSprite.zAdd = CAR.h;
   carSprite.at(CAR.x, CAR.y);
 
   const shelf = place(div('shelf', stage), SHELF.x, SHELF.y, Z.shelf);
@@ -230,7 +241,7 @@ export function buildScene(app: HTMLElement): Scene {
   handEl.style.zIndex = String(Z.hand);
   const hand = new Sprite(handEl, 40, 4);
 
-  return { root, stage, spots, windows, car, carSprite, fx, shelf, hand, halo };
+  return { root, stage, spots, windows, car, carSprite, riders: car.querySelector('.riders') as SVGGElement, riderAt, fx, shelf, hand, halo };
 }
 
 /** Scales the stage to fit the window and returns the transform. */
@@ -242,4 +253,40 @@ export function fitStage(stage: HTMLElement): { scale: number; ox: number; oy: n
   const oy = (vh - H * scale) / 2;
   stage.style.transform = `translate3d(${ox}px,${oy}px,0) scale(${scale})`;
   return { scale, ox, oy };
+}
+
+/** The police van picture (or the drawn car) with driver and passenger windows and flashing lights. */
+function buildCar(stage: HTMLElement): { car: HTMLElement; riderAt: (i: number) => string | null } {
+  const car = div('prop car', stage);
+  const body = div('car-body', car);
+  const van = vanArt();
+  if (!van) {
+    body.innerHTML = art.carSvg(policeHead(town.police));
+    div('car-lights', car, art.carLights());
+    return { car, riderAt: (i) => (i < 3 ? `translate(${56 + i * 18} 28) scale(.32)` : null) };
+  }
+  const { cab, rear, lights } = van;
+  const rect = (r: typeof cab) => `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="3"/>`;
+  const img = document.createElement('img');
+  img.src = van.url;
+  img.width = van.w;
+  img.height = van.h;
+  img.alt = '';
+  img.className = 'van-img';
+  body.appendChild(img);
+  body.insertAdjacentHTML(
+    'beforeend',
+    `<svg class="van-overlay" viewBox="0 0 ${van.w} ${van.h}" width="${van.w}" height="${van.h}">
+      <defs><clipPath id="van-cab">${rect(cab)}</clipPath><clipPath id="van-rear">${rect(rear)}</clipPath></defs>
+      <g clip-path="url(#van-cab)"><g class="driver" transform="translate(${cab.x + 2} ${cab.y + 6}) scale(.36)">${policeHead(town.police)}</g></g>
+      <g clip-path="url(#van-rear)"><g class="riders"></g></g>
+      <g fill="#fff" opacity=".22">${rect(cab)}${rect(rear)}</g>
+    </svg>`,
+  );
+  const glow = div('car-lights van-lights', car);
+  glow.style.transform = `translate3d(${lights.x}px,${lights.y - 14}px,0)`;
+  glow.style.width = `${lights.w}px`;
+  glow.innerHTML = '<div class="l-red"></div><div class="l-blue"></div>';
+  // The back window fits two sheepish faces; the third rosvo rides out of sight.
+  return { car, riderAt: (i) => (i < 2 ? `translate(${rear.x - 2 + i * 24} ${rear.y + 8}) scale(.27)` : null) };
 }
