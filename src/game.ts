@@ -377,11 +377,13 @@ function pullOutLoot(): void {
   const def = SPOTS[state.stashSpot];
   const item = view(victim()).item;
   item.scale = def.s;
-  item.zAdd = 50;
+  // Once found, the loot always draws in front of hiding objects so it never gets lost behind them.
+  item.zFix = Z.loot;
   item.at(p.x, p.y).show(true);
   item.el.classList.add('glow');
   state.itemOut = true;
-  state.itemRest = def.far ? { x: def.land.x, y: 600 } : { x: def.x, y: Math.min(def.top + def.h * 0.5, 740) };
+  // If dropped away from its owner, the loot floats back to the ground in front of the spot.
+  state.itemRest = def.far ? { x: def.land.x, y: 600 } : { x: def.x, y: clamp(def.top + def.h + 10, 600, 760) };
 }
 
 function startDrag(what: 'rosvo' | 'item', p: Pt, pointerId: number): void {
@@ -464,7 +466,7 @@ async function dropItem(): Promise<void> {
   const o = victim();
   const v = view(o);
   v.item.el.classList.remove('dragging');
-  v.item.zFix = null;
+  v.item.zFix = Z.loot;
   if (dist(v.item, { x: o.pos.x, y: o.pos.y - 100 * depth(o.pos.y) * o.size }) > OWNER_RADIUS) {
     state.busy = true;
     sfx.floatBack();
@@ -478,6 +480,7 @@ async function dropItem(): Promise<void> {
   const h = handPos(o);
   v.item.el.classList.remove('glow');
   await v.item.moveTo(h.x, h.y, 300, 0, ease.out);
+  v.item.zFix = null;
   o.robbed = false;
   o.done = true;
   syncItem(o);

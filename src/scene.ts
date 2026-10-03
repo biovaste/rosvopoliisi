@@ -34,7 +34,7 @@ export interface Scene {
   hand: Sprite;
 }
 
-export const Z = { tint: 4000, shelf: 5000, fx: 6000, hand: 7000, drag: 3000 };
+export const Z = { tint: 4000, shelf: 5000, fx: 6000, hand: 7000, drag: 3000, loot: 2900 };
 
 function div(cls: string, parent: HTMLElement, html = ''): HTMLDivElement {
   const d = document.createElement('div');

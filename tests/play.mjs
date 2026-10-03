@@ -155,6 +155,12 @@ for (let cycle = 0; cycle < 2; cycle++) {
       await drag(t.item, { x: 512, y: 200 });
       s = await waitFor((s) => s.itemOut && !s.busy, 'loot floats back');
       check(s.phase === 'returning', 'loot dropped away from owner floats back');
+      const front = await page.evaluate(() => {
+        const z = (el) => Number(getComputedStyle(el).zIndex) || 0;
+        const loot = [...document.querySelectorAll('.actor.item')].find((e) => e.classList.contains('glow'));
+        return !!loot && [...document.querySelectorAll('.spot-obj')].every((o) => z(loot) > z(o));
+      });
+      check(front, 'retrieved loot is drawn in front of every hiding object');
       t = await tg();
     }
     await drag(t.item, t.owner);
