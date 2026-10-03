@@ -4,7 +4,7 @@
 
 import { itemSvg } from './art';
 import { makeActor, stand, walkTo } from './actors';
-import { FREE_POINTS, depth, dist, doorOf, type Pt } from './layout';
+import { FREE_POINTS, depth, dist, doorOf, onBench, type Pt } from './layout';
 import { ROLES, ROLE_HOME, ROLE_ITEM, ownerSvg, randomLooks, shuffle, type Role } from './people';
 import { state, type Owner } from './state';
 import type { Sprite } from './tween';
@@ -23,7 +23,14 @@ export const ownerById = (id: number): Owner | undefined => state.owners.find((o
 
 /** Where an owner holds their item. */
 export function handPos(o: Owner): Pt {
-  return { x: o.pos.x, y: o.pos.y - 62 * depth(o.pos.y) * o.size };
+  return { x: o.pos.x, y: o.pos.y - (sits(o) ? 50 : 62) * depth(o.pos.y) * o.size };
+}
+
+/** People (not pets) standing at the bench sit down on it. */
+const sits = (o: Owner): boolean => !o.walking && o.role !== 'dog' && o.role !== 'cat' && onBench(o.pos);
+
+function syncSeat(o: Owner): void {
+  view(o).sprite.el.classList.toggle('sitting', sits(o));
 }
 
 function freePoints(): Pt[] {
@@ -48,6 +55,7 @@ function create(role: Role, look: Owner['look'], pos: Pt): Owner {
   bubble.innerHTML = `<div class="bubble-inner">${itemSvg(o.item)}</div>`;
   sprite.el.appendChild(bubble);
   stand(sprite, pos, size);
+  sprite.el.classList.toggle('sitting', role !== 'dog' && role !== 'cat' && onBench(pos));
   const item = makeActor('item', `<div class="actor-inner">${itemSvg(o.item)}</div>`, 50, 50);
   views.set(o.id, { sprite, bubble, item });
   state.owners.push(o);
@@ -102,6 +110,7 @@ export function fadeOutCrowd(): void {
 async function walkOwner(o: Owner, to: Pt): Promise<void> {
   const v = view(o);
   o.walking = true;
+  syncSeat(o);
   v.bubble.className = to.x > 950 ? 'bubble left' : 'bubble';
   await walkTo(v.sprite, to, {
     k: o.size,
@@ -113,8 +122,9 @@ async function walkOwner(o: Owner, to: Pt): Promise<void> {
   o.pos = { ...to };
   v.sprite.flip = false;
   v.sprite.render();
-  syncItem(o);
   o.walking = false;
+  syncSeat(o);
+  syncItem(o);
 }
 
 /** A free-standing townsperson strolls to another free spot. */

@@ -4,7 +4,7 @@
 import * as art from './art';
 import { backdropSvg, chimneySpotSvg, treeSvg } from './buildings';
 import { SKY, TILES, propArt, vanArt } from './images';
-import { BASE_Y, CAR, CELLS, H, LAMPS, NEAR_LAMP, SHELF, SPOTS, STATION, W, peekH, peekW, placeBuilding, type Placed, type SpotDef } from './layout';
+import { BASE_Y, BENCH_SEAT, CAR, CELLS, H, LAMPS, NEAR_LAMP, SHELF, SPOTS, STATION, W, peekH, peekW, placeBuilding, type Placed, type SpotDef } from './layout';
 import { policeHead } from './people';
 import { town } from './town';
 import { Sprite } from './tween';
@@ -87,8 +87,8 @@ function spotObject(def: SpotDef): string {
       return art.crateSvg();
     case 'sacks':
       return art.sacksSvg();
-    case 'stall':
-      return art.stallCounterSvg();
+    case 'barrels':
+      return art.barrelsSvg();
     case 'roof':
       return '';
   }
@@ -178,9 +178,8 @@ export function buildScene(app: HTMLElement): Scene {
   lamp(stage, NEAR_LAMP.x, NEAR_LAMP.y, NEAR_LAMP.k);
   const bench = propArt('bench');
   // The bench sits on the lawn by the sidewalk, between the playground and the bush.
-  if (bench) picture(stage, { art: { ...bench, door: 0, roof: [] }, x: 506, y: 656 - bench.h }, 656);
-  else place(div('prop', stage, art.benchSvg()), 12, 686, 736);
-  place(div('prop', stage, art.stallBackSvg()), 1015, 548, 600);
+  if (bench) picture(stage, { art: { ...bench, door: 0, roof: [] }, x: BENCH_SEAT.x - bench.w / 2, y: 656 - bench.h }, 656);
+  else place(div('prop', stage, art.benchSvg()), BENCH_SEAT.x - 70, 656 - 70, 656);
   if (town.fence) {
     const fence = propArt('fence');
     if (fence) {

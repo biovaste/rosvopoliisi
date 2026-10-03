@@ -606,33 +606,25 @@ export function mailboxSvg(): string {
 }
 
 
-export function stallBackSvg(): string {
-  const stripes = Array.from({ length: 8 }, (_, i) => `<path d="M${6 + i * 22.5} 28 h22.5 v26 q-11 12 -22.5 0Z" fill="${i % 2 ? '#fff6ec' : '#e53935'}" stroke="${OUT}" stroke-width="2.5" stroke-linejoin="round"/>`).join('');
-  return `<svg viewBox="0 0 190 200" width="190" height="200">
-    <path d="M14 50 V196 M176 50 V196" stroke="${OUT}" stroke-width="11"/><path d="M14 50 V196 M176 50 V196" stroke="#a1694a" stroke-width="6"/>
-    <path d="M12 52 V196 M174 52 V196" stroke="#fff" stroke-width="1.5" opacity=".35"/>
-    <path d="${wob([[0, 30], [95, 2], [190, 30]], 1)}" fill="#e53935" stroke="${OUT}" stroke-width="3.5" stroke-linejoin="round"/>
-    <path d="M20 24 L95 6" stroke="#fff" stroke-width="3" opacity=".4" stroke-linecap="round"/>
-    ${stripes}
-    <path d="M6 52 Q95 64 184 52" stroke="#000" stroke-width="6" fill="none" opacity=".1"/>
-  </svg>`;
-}
-
-
-export function stallCounterSvg(): string {
-  const wood = vgrad('#c8874f', 0.15, -0.22);
-  const fruit = (x: number, y: number, c: string) =>
-    `<circle cx="${x}" cy="${y}" r="9" fill="${c}" stroke="${OUT}" stroke-width="2.2"/><circle cx="${x - 3}" cy="${y - 3}" r="2.5" fill="#fff" opacity=".6"/><path d="M${x} ${y - 9} l2 -4" stroke="#5d4037" stroke-width="2"/>`;
-  return `<svg viewBox="0 0 190 96" width="190" height="96">
-    <defs>${wood.def}</defs>
-    <ellipse cx="95" cy="92" rx="94" ry="5" fill="#000" opacity=".18"/>
-    <path d="${wob([[6, 18], [184, 18], [184, 92], [6, 92]], 1.4)}" fill="${wood.fill}" stroke="${OUT}" stroke-width="3.5"/>
-    <path d="M6 44 H184 M6 68 H184" stroke="#9c6235" stroke-width="3"/>
-    <path d="M24 32 q14 4 28 0 M110 56 q14 -4 30 0 M60 80 q12 4 24 0" stroke="#a96d3c" stroke-width="2" fill="none"/>
-    <path d="${wob([[0, 8], [190, 8], [190, 22], [0, 22]], 1)}" fill="#e0a66a" stroke="${OUT}" stroke-width="3.5"/>
-    <path d="M4 11 H186" stroke="#fff" stroke-width="2.5" opacity=".4"/>
-    ${fruit(30, 2, '#ff7043')}${fruit(48, 4, '#ffca28')}${fruit(39, -8, '#ff8a65')}
-    ${fruit(140, 2, '#9ccc65')}${fruit(158, 4, '#ef5350')}${fruit(149, -8, '#ef5350')}
+/** Two wooden barrels on the market cobbles, 116 x 100. */
+export function barrelsSvg(): string {
+  const barrel = (x: number, y: number, w: number, h: number, c: string) => {
+    const g = vgrad(c, 0.18, -0.25);
+    const r = w * 0.12;
+    return `<g><defs>${g.def}</defs>
+      <path d="M${x + r} ${y} H${x + w - r} Q${x + w + r} ${y + h / 2} ${x + w - r} ${y + h} H${x + r} Q${x - r} ${y + h / 2} ${x + r} ${y}Z" fill="${g.fill}" stroke="${OUT}" stroke-width="3.5"/>
+      <path d="M${x + w * 0.35} ${y + 2} Q${x + w * 0.3} ${y + h / 2} ${x + w * 0.35} ${y + h - 2} M${x + w * 0.65} ${y + 2} Q${x + w * 0.7} ${y + h / 2} ${x + w * 0.65} ${y + h - 2}" stroke="${OUT}" stroke-width="1.6" fill="none" opacity=".3"/>
+      <path d="M${x - r * 0.55} ${y + h * 0.28} H${x + w + r * 0.55} M${x - r * 0.55} ${y + h * 0.72} H${x + w + r * 0.55}" stroke="#6d6a75" stroke-width="6"/>
+      <path d="M${x - r * 0.55} ${y + h * 0.28} H${x + w + r * 0.55} M${x - r * 0.55} ${y + h * 0.72} H${x + w + r * 0.55}" stroke="${OUT}" stroke-width="1.5" opacity=".5"/>
+      <ellipse cx="${x + w / 2}" cy="${y + 1}" rx="${w / 2 - r}" ry="5" fill="${tone(c, 0.15)}" stroke="${OUT}" stroke-width="3"/>
+      <path d="M${x + w * 0.2} ${y + h * 0.4} Q${x + w * 0.18} ${y + h * 0.55} ${x + w * 0.22} ${y + h * 0.62}" stroke="#fff" stroke-width="3" fill="none" opacity=".35" stroke-linecap="round"/></g>`;
+  };
+  const apples = [[30, 18, '#e53935'], [42, 14, '#ffca28'], [36, 9, '#ef5350']]
+    .map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="7" fill="${c}" stroke="${OUT}" stroke-width="2"/><circle cx="${Number(x) - 2}" cy="${Number(y) - 2}" r="2" fill="#fff" opacity=".6"/>`)
+    .join('');
+  return `<svg viewBox="0 0 116 100" width="116" height="100" style="overflow:visible">
+    <ellipse cx="58" cy="96" rx="58" ry="6" fill="#000" opacity=".18"/>
+    ${barrel(62, 30, 46, 66, '#b9773f')}${barrel(8, 22, 54, 76, '#c8874f')}${apples}
   </svg>`;
 }
 

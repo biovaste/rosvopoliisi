@@ -32,9 +32,10 @@ jeweller and elder always stand at their own building's door. Everyone else
 appears at random places, strolls around, and sometimes leaves while a
 newcomer arrives. Any of them can be robbed, in any order.
 
-**Hiding spots.** There are 13. Some are for rosvot only (station roof, slide,
-market stall), some for loot only (mailbox, flower planter, sacks), and some
-for both.
+**Hiding spots.** There are 13. Some are for rosvot only (station roof, slide),
+some for loot only (mailbox, flower planter, sacks), and some for both
+(barrels, crates, bush, tunnel, trees, chimneys). Townspeople who stop at the
+bench sit down on it.
 
 **Difficulty by level:**
 - Rosvot peek out less and for shorter times.

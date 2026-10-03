@@ -128,7 +128,7 @@ function armsDown(p: Pen, k: number, sleeve: string, skin: string, stripe?: stri
 function figure(p: Pen, k: number, t: number, legsSvg: string, upper: string, cls = ''): string {
   return `<svg viewBox="0 0 120 200" width="120" height="200"${cls ? ` class="${cls}"` : ''}>${p.flush()}
     ${groundShadow(k)}${legsSvg}
-    <g transform="translate(0 ${-t})">${upper}</g>
+    <g class="upper"><g transform="translate(0 ${-t})">${upper}</g></g>
   </svg>`;
 }
 

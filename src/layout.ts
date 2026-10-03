@@ -77,7 +77,7 @@ export const OWNER_RADIUS = 160;
 
 // ---------- Hiding spots ----------
 
-export type SpotKind = 'chimney' | 'tree' | 'roof' | 'mailbox' | 'slide' | 'tunnel' | 'bush' | 'planter' | 'crates' | 'sacks' | 'stall';
+export type SpotKind = 'chimney' | 'tree' | 'roof' | 'mailbox' | 'slide' | 'tunnel' | 'bush' | 'planter' | 'crates' | 'sacks' | 'barrels';
 /** Who may use a spot: a hiding rosvo, a stash of loot, or both. */
 export type SpotUse = 'both' | 'rosvo' | 'stash';
 
@@ -175,19 +175,19 @@ export const SPOTS: SpotDef[] = [
   backTree,
   roof,
   withArt(spot('mailbox', 'stash', mailboxX(), 500, 60, 90, 22), 'mailbox', 0.12),
-  // Playground: slide and tunnel side by side on the sand, with a gap between.
+  // Playground: the slide in front, the tunnel at the back of the sandpit.
   withArt(spot('slide', 'rosvo', 92, 776, 220, 170, 40), 'slide', 0.3, 0.3, 0.9),
-  withArt(spot('tunnel', 'both', 386, 795, 170, 96, 30), 'tunnel', 0.12, 0.5, 0.83),
+  withArt(spot('tunnel', 'both', 386, 708, 170, 96, 30), 'tunnel', 0.12, 0.5, 0.83),
   // Lawn: bush in front, the small tree further back.
   withArt(spot('bush', 'both', 588, 795, 200, 120, 50), 'bush', 0.4, 0.5, 0.85),
   propArt('tree-birch')
     ? withArt(spot('tree', 'both', 742, 712, 150, 225, 38, 712, 0.75), 'tree-birch', 0.08)
     : withArt(spot('tree', 'both', 742, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
-  // Market square: planter in front, crates behind, sacks by the stall.
+  // Market square: small things on the cobbles (planter, crates, sacks, barrels).
   withArt(spot('planter', 'stash', 852, 795, 120, 76, 26), 'planter', 0.3),
   withArt(spot('crates', 'both', 962, 735, 160, 140, 30, 735), 'crates', 0.07),
   spot('sacks', 'stash', 1062, 798, 130, 84, 30),
-  spot('stall', 'rosvo', 1122, 750, 190, 96, 22),
+  spot('barrels', 'both', 1140, 704, 116, 100, 24),
 ];
 
 export const peekW = (s: SpotDef): number => PEEK_W * s.s;
@@ -214,12 +214,17 @@ export const FREE_POINTS: Pt[] = [
   { x: 560, y: 606 },
   { x: 770, y: 604 },
   { x: 1000, y: 606 },
-  { x: 420, y: 684 },
+  { x: 424, y: 774 },
   { x: 700, y: 770 },
   { x: 800, y: 700 },
   { x: 690, y: 500 },
-  { x: 1170, y: 640 },
+  { x: 1162, y: 782 },
 ];
+
+/** Seat on the bench: a townsperson standing here sits down. */
+export const BENCH_SEAT: Pt = { x: 581, y: 664 };
+FREE_POINTS.push(BENCH_SEAT);
+export const onBench = (p: Pt): boolean => dist(p, BENCH_SEAT) < 2;
 
 /** Sticker shelf (y moves down on wide screens where the top of the sky is cut off). */
 export const SHELF = { x: 920, y: 14, w: 250, h: 120 };

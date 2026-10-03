@@ -326,6 +326,19 @@ body[data-time='night'] .lamp .glow {
   transform-box: fill-box;
   transform-origin: 50% 0;
 }
+/* Sitting on the bench: the body drops onto the seat and the legs fold under it. */
+.owner .upper,
+.owner .legs {
+  transform-box: view-box;
+  transform-origin: 60px 196px;
+  transition: transform 0.25s ease-out;
+}
+.owner.sitting .upper {
+  transform: translateY(14px);
+}
+.owner.sitting .legs {
+  transform: scaleY(0.66);
+}
 .walking .leg.l {
   animation: step 0.32s ease-in-out infinite alternate;
 }
