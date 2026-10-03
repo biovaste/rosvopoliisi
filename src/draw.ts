@@ -48,3 +48,36 @@ export function vgrad(base: string, light = 0.25, dark = -0.18): { def: string; 
     fill: `url(#${id})`,
   };
 }
+
+// ---------- The soft "storybook" pen shared by people and items ----------
+
+/** Outline width for silhouettes; details use a fraction of it via `out(k)`. */
+export const SW = 3.5;
+
+/** Collects gradient defs for one drawing so every drawn instance gets its own ids. */
+export class Pen {
+  private defs: string[] = [];
+
+  /** A soft top-lit gradient fill for a base colour. */
+  fill(base: string, light = 0.16, dark = -0.12): string {
+    const id = uid('pg');
+    this.defs.push(
+      `<linearGradient id="${id}" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="${tone(base, light)}"/><stop offset="1" stop-color="${tone(base, dark)}"/></linearGradient>`,
+    );
+    return `url(#${id})`;
+  }
+  /** The defs collected so far, emptied, ready to put in front of the drawing. */
+  flush(): string {
+    const d = this.defs.length ? `<defs>${this.defs.join('')}</defs>` : '';
+    this.defs = [];
+    return d;
+  }
+}
+
+/** Outline stroke attributes, `k` times the silhouette width. */
+export const out = (k = 1) => `stroke="${OUT}" stroke-width="${(SW * k).toFixed(1)}" stroke-linejoin="round"`;
+/** A soft dark shape, usually a crescent on the lower right. */
+export const shade = (d: string, a = 0.1) => `<path d="${d}" fill="#000" opacity="${a}"/>`;
+/** A white highlight stroke, usually on the upper left. */
+export const shine = (d: string, w = 3) =>
+  `<path d="${d}" fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" opacity=".45"/>`;

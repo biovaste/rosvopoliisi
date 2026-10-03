@@ -1,109 +1,318 @@
 // SVG art for items and small props. Everything is drawn in code.
 
-import { OUT, tone, vgrad, wob } from './draw';
+import { OUT, Pen, SW, out, shade, shine, tone, uid, vgrad, wob } from './draw';
 
 export { OUT };
 
 
 // ---------- Items ----------
+// Drawn in the same soft "storybook" style as the people: round outlines,
+// top-lit gradient fills from a Pen, a dark crescent on the lower right and a
+// white shine on the upper left. Each call makes fresh gradient ids, so the
+// same item can be on screen several times at once.
 
 export type ItemKind = 'cake' | 'ball' | 'flowers' | 'bone' | 'icecream' | 'teddy' | 'gold' | 'gem' | 'jewels' | 'parcel' | 'watering' | 'yarn' | 'toolbox';
 
+/** A four-pointed twinkle. */
+const sparkle = (x: number, y: number, r: number) => {
+  const k = r * 0.2;
+  return `<path d="M${x} ${y - r} Q${x + k} ${y - k} ${x + r} ${y} Q${x + k} ${y + k} ${x} ${y + r} Q${x - k} ${y + k} ${x - r} ${y} Q${x - k} ${y - k} ${x} ${y - r}Z" fill="#fffbe0" ${out(0.4)}/>`;
+};
+/** Soft shadow on the ground under an item. */
+const ground = (cx: number, cy: number, rx: number) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="4.5" fill="#000" opacity=".12"/>`;
+/** A small round thing with a gradient, outline and a glint (cherry, pearl, pad). */
+const bead = (p: Pen, x: number, y: number, r: number, c: string, k = 0.5) =>
+  `<circle cx="${x}" cy="${y}" r="${r}" fill="${p.fill(c, 0.3, -0.15)}" ${out(k)}/><circle cx="${x - r * 0.35}" cy="${y - r * 0.38}" r="${(r * 0.3).toFixed(1)}" fill="#fff" opacity=".75"/>`;
+
+function cake(p: Pen): string {
+  const sprinkles = [
+    [28, 48, '#ffd54f', 30],
+    [40, 53, '#64b5f6', -20],
+    [60, 53, '#81c784', 40],
+    [72, 48, '#fff', -35],
+    [50, 50, '#ffd54f', 80],
+  ] as const;
+  return `${ground(50, 91, 38)}
+    <path d="M16 52 V80 Q16 90 50 90 Q84 90 84 80 V52Z" fill="${p.fill('#f2c27e')}" ${out()}/>
+    <path d="M16 68 Q50 78 84 68 V74 Q50 84 16 74Z" fill="#fff4e0" ${out(0.45)}/>
+    <circle cx="30" cy="80" r="2.6" fill="#e8577a"/><circle cx="50" cy="83" r="2.6" fill="#e8577a"/><circle cx="70" cy="80" r="2.6" fill="#e8577a"/>
+    ${shade('M70 58 Q84 56 84 62 V80 Q84 89 62 90 Q78 80 70 58Z')}
+    <path d="M14 51 Q14 38 50 38 Q86 38 86 51 Q86 57 81 57 Q77 66 72 58 Q65 62 59 58 Q53 68 46 58 Q39 63 33 58 Q27 66 22 57 Q14 57 14 51Z" fill="${p.fill('#f78fb6')}" ${out()}/>
+    ${shine('M22 47 Q26 42 38 41')}
+    ${sprinkles.map(([x, y, c, a]) => `<path d="M${x - 2.4} ${y} H${x + 2.4}" stroke="${c}" stroke-width="2.6" stroke-linecap="round" transform="rotate(${a} ${x} ${y})"/>`).join('')}
+    ${bead(p, 33, 44, 5.5, '#e53935')}${bead(p, 67, 44, 5.5, '#e53935')}
+    <rect x="45.5" y="18" width="9" height="29" rx="3" fill="${p.fill('#7ec8f0')}" ${out(0.7)}/>
+    <path d="M46.5 27 L53.5 23 M46.5 35 L53.5 31 M46.5 43 L53.5 39" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M50 18 V14" stroke="${OUT}" stroke-width="2" stroke-linecap="round"/>
+    <path d="M50 1 Q58 9 56.5 13.5 Q55 18 50 18 Q45 18 43.5 13.5 Q42 9 50 1Z" fill="${p.fill('#ffcf3d')}" ${out(0.65)}/>
+    <path d="M50 8.5 Q53.5 12.5 52.5 14.5 Q51.5 16 50 16 Q48.5 16 47.5 14.5 Q46.5 12.5 50 8.5Z" fill="#ff8a3d"/>`;
+}
+
+function ball(p: Pen): string {
+  const id = uid('bc');
+  const [px, py] = [45, 46];
+  const colors = ['#ef5350', '#fff8ee', '#42a5f5', '#fff8ee', '#ffd54f', '#fff8ee'];
+  const at = (a: number, r: number) => [px + Math.cos((a * Math.PI) / 180) * r, py + Math.sin((a * Math.PI) / 180) * r].map((v) => v.toFixed(1)).join(' ');
+  // Coloured wedges are wider than the white ones between them.
+  const starts = [-75, 5, 45, 125, 165, 245, 285];
+  const wedges = colors
+    .map((c, i) => {
+      const [a0, a1] = [starts[i], starts[i + 1]];
+      return `<path d="M${px} ${py} Q${at(a0 + 8, 40)} ${at(a0, 80)} L${at(a1, 80)} Q${at(a1 + 8, 40)} ${px} ${py}Z" fill="${p.fill(c, 0.1, -0.1)}"/>`;
+    })
+    .join('');
+  const seams = starts.slice(0, 6).map((a) => `M${px} ${py} Q${at(a + 8, 40)} ${at(a, 80)}`).join(' ');
+  return `${ground(50, 92, 30)}
+    <clipPath id="${id}"><circle cx="50" cy="52" r="36"/></clipPath>
+    <g clip-path="url(#${id})">${wedges}
+      <path d="${seams}" fill="none" stroke="${OUT}" stroke-width="1.6" opacity=".45"/>
+      ${shade('M86 52 A36 36 0 0 1 14 52 Q20 80 50 82 Q80 80 86 52Z', 0.12)}
+      <path d="M78 22 A36 36 0 0 1 82 76 Q92 46 78 22Z" fill="#000" opacity=".08"/>
+    </g>
+    <circle cx="${px}" cy="${py}" r="5.5" fill="#fff8ee" ${out(0.5)}/>
+    <circle cx="50" cy="52" r="36" fill="none" ${out()}/>
+    ${shine('M21 46 Q22 32 34 24', 3.5)}<circle cx="27" cy="58" r="2.2" fill="#fff" opacity=".5"/>`;
+}
+
+function flowers(p: Pen): string {
+  const flower = (x: number, y: number, r: number, c: string) => {
+    const f = p.fill(c, 0.22, -0.1);
+    const petals = [0, 72, 144, 216, 288]
+      .map((a) => `<circle cx="0" cy="${-r}" r="${r * 0.82}" fill="${f}" ${out(0.55)} transform="rotate(${a})"/>`)
+      .join('');
+    const inner = [0, 72, 144, 216, 288].map((a) => `<circle cx="0" cy="${-r}" r="${r * 0.82 - 1}" fill="${f}" transform="rotate(${a})"/>`).join('');
+    return `<g transform="translate(${x} ${y})">${petals}${inner}
+      <circle r="${r * 0.62}" fill="${p.fill('#ffd54f', 0.3, -0.15)}" ${out(0.5)}/><circle cx="${-r * 0.2}" cy="${-r * 0.22}" r="${r * 0.18}" fill="#fff" opacity=".7"/></g>`;
+  };
+  const stems = 'M50 76 Q30 56 28 40 M50 76 L50 24 M50 76 Q70 56 72 40 M50 76 Q40 56 38 22 M50 76 Q62 56 64 22';
+  return `${ground(50, 94, 18)}
+    <path d="${stems}" fill="none" stroke="${OUT}" stroke-width="7" stroke-linecap="round"/>
+    <path d="${stems}" fill="none" stroke="#4caf50" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M44 60 Q24 58 16 44 Q34 42 46 56Z" fill="${p.fill('#5cb860')}" ${out(0.6)}/>
+    <path d="M56 60 Q76 58 84 44 Q66 42 54 56Z" fill="${p.fill('#5cb860')}" ${out(0.6)}/>
+    ${flower(38, 22, 7, '#fff3f6')}${flower(64, 22, 7, '#ffb74d')}
+    ${flower(26, 40, 8.5, '#f06292')}${flower(74, 40, 8.5, '#ba68c8')}${flower(50, 30, 9.5, '#ef5350')}
+    <path d="M24 56 Q50 66 76 56 L57 93 Q50 96 43 93Z" fill="${p.fill('#8fd0f5')}" ${out()}/>
+    <path d="M24 56 Q50 66 76 56 L72 64 Q50 72 28 64Z" fill="#fff" opacity=".35"/>
+    ${shade('M64 62 L76 56 L57 93 Q54 94.5 52 95 Q62 78 64 62Z', 0.12)}
+    ${shine('M33 66 L44 87')}
+    <path d="M50 80 Q36 70 35 78 Q35 86 50 80Z M50 80 Q64 70 65 78 Q65 86 50 80Z" fill="${p.fill('#f06292')}" ${out(0.55)}/>
+    <path d="M48 82 L43 92 L47 91 M52 82 L57 92 L53 91" fill="none" stroke="#f06292" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="50" cy="80" r="3.6" fill="#e04a7d" ${out(0.5)}/>`;
+}
+
+function bone(): string {
+  const shapes = `<circle cx="27" cy="42" r="10"/><circle cx="27" cy="58" r="10"/><circle cx="73" cy="42" r="10"/><circle cx="73" cy="58" r="10"/><rect x="27" y="42" width="46" height="16"/>`;
+  return `${ground(50, 84, 34)}
+    <g transform="rotate(-24 50 50)">
+      <g fill="${OUT}" stroke="${OUT}" stroke-width="${SW * 2}" stroke-linejoin="round">${shapes}</g>
+      <g fill="#fbecd0">${shapes}</g>
+      ${shade('M30 66 Q50 60 70 66 Q72 68 73 68 Q82 68 83 58 Q84 66 76 69 Q68 70 66 64 Q50 61 34 64 Q30 70 24 68 Q30 68 30 66Z', 0.1)}
+      ${shade('M80 50 Q85 54 82 62 Q78 66 74 67 Q81 62 80 50Z', 0.1)}
+      ${shine('M20 38 Q21 33 27 32')}${shine('M66 37 Q67 33 72 32', 2.5)}${shine('M36 46 H62', 2.5)}
+    </g>`;
+}
+
+function icecream(p: Pen): string {
+  const id = uid('ic');
+  const coneD = 'M30 54 L50 96 L70 54Z';
+  const waffle = [0, 1, 2, 3, 4, 5].map((i) => `M${20 + i * 9} 50 L${44 + i * 9} 98 M${80 - i * 9} 50 L${56 - i * 9} 98`).join(' ');
+  const sprinkles = [
+    [36, 46, '#ffd54f', 30],
+    [46, 50, '#64b5f6', -30],
+    [58, 46, '#fff', 60],
+    [64, 51, '#81c784', -10],
+  ] as const;
+  return `${ground(50, 97, 10)}
+    <clipPath id="${id}"><path d="${coneD}"/></clipPath>
+    <path d="${coneD}" fill="${p.fill('#e3a857')}"/>
+    <g clip-path="url(#${id})"><path d="${waffle}" stroke="#b5772f" stroke-width="2.2"/>${shade('M60 54 L70 54 L50 96Z', 0.12)}</g>
+    <path d="${coneD}" fill="none" ${out()}/>
+    <path d="M26 52 Q22 32 50 31 Q78 32 74 52 Q70 59 64 54 Q60 63 54 56 Q48 61 44 56 Q38 62 34 55 Q30 58 26 52Z" fill="${p.fill('#f8a5c2')}" ${out()}/>
+    ${shade('M64 36 Q76 40 74 52 Q70 59 64 54 Q72 48 64 36Z')}
+    ${sprinkles.map(([x, y, c, a]) => `<path d="M${x - 2.2} ${y} H${x + 2.2}" stroke="${c}" stroke-width="2.4" stroke-linecap="round" transform="rotate(${a} ${x} ${y})"/>`).join('')}
+    <path d="M31 33 Q28 14 50 13 Q72 14 69 33 Q63 38 56 35 Q50 39 44 35 Q37 38 31 33Z" fill="${p.fill('#a8e6cf')}" ${out()}/>
+    ${shade('M60 17 Q71 21 69 33 Q64 37 59 35 Q66 28 60 17Z')}
+    ${shine('M36 26 Q37 19 45 17')}${shine('M31 46 Q32 40 38 37', 2.5)}
+    <path d="M53 7 Q55 2 61 1" fill="none" stroke="${OUT}" stroke-width="2.2" stroke-linecap="round"/>
+    ${bead(p, 51, 10, 6, '#e53935', 0.6)}`;
+}
+
+function teddy(p: Pen): string {
+  const fur = p.fill('#c08a5b');
+  const light = p.fill('#f0d2ab', 0.2, -0.08);
+  const stitch = `fill="none" stroke="${OUT}" stroke-width="1.3" stroke-dasharray="2.4 2.4" stroke-linecap="round" opacity=".55"`;
+  return `${ground(50, 95, 32)}
+    <circle cx="31" cy="22" r="9.5" fill="${fur}" ${out()}/><circle cx="69" cy="22" r="9.5" fill="${fur}" ${out()}/>
+    <circle cx="31.5" cy="22.5" r="4.6" fill="${light}"/><circle cx="68.5" cy="22.5" r="4.6" fill="${light}"/>
+    <ellipse cx="50" cy="72" rx="23" ry="19" fill="${fur}" ${out()}/>
+    <ellipse cx="50" cy="75" rx="12" ry="11" fill="${light}"/>
+    <ellipse cx="50" cy="75" rx="9" ry="8" ${stitch}/>
+    ${shade('M64 58 Q76 66 72 80 Q66 90 54 91 Q70 80 64 58Z')}
+    <ellipse cx="25" cy="66" rx="7.5" ry="11.5" fill="${fur}" ${out()} transform="rotate(25 25 66)"/>
+    <ellipse cx="75" cy="66" rx="7.5" ry="11.5" fill="${fur}" ${out()} transform="rotate(-25 75 66)"/>
+    <ellipse cx="32" cy="87" rx="10.5" ry="8.5" fill="${fur}" ${out()}/><ellipse cx="68" cy="87" rx="10.5" ry="8.5" fill="${fur}" ${out()}/>
+    <ellipse cx="32" cy="87.5" rx="5.5" ry="4.5" fill="${light}"/><ellipse cx="68" cy="87.5" rx="5.5" ry="4.5" fill="${light}"/>
+    <circle cx="50" cy="37" r="21" fill="${fur}" ${out()}/>
+    ${shade('M62 22 Q74 30 70 44 Q65 55 52 58 Q68 48 62 22Z')}
+    ${shine('M33 30 Q35 22 43 19')}
+    <path d="M50 16 V22" ${stitch}/>
+    <ellipse cx="50" cy="45" rx="10.5" ry="8" fill="${light}" ${out(0.45)}/>
+    <ellipse cx="37" cy="44" rx="4" ry="2.6" fill="#f08a8a" opacity=".55"/><ellipse cx="63" cy="44" rx="4" ry="2.6" fill="#f08a8a" opacity=".55"/>
+    <circle cx="42" cy="34" r="3" fill="${OUT}"/><circle cx="58" cy="34" r="3" fill="${OUT}"/>
+    <circle cx="41" cy="33" r="1" fill="#fff"/><circle cx="57" cy="33" r="1" fill="#fff"/>
+    <path d="M45.5 41 Q50 39 54.5 41 Q53 45.5 50 45.5 Q47 45.5 45.5 41Z" fill="${OUT}"/>
+    <path d="M50 45.5 V48 M46 48 Q50 51.5 54 48" fill="none" stroke="${OUT}" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M50 58 L40 52.5 Q38 58 40 63.5Z M50 58 L60 52.5 Q62 58 60 63.5Z" fill="${p.fill('#e53935')}" ${out(0.55)}/>
+    <circle cx="50" cy="58" r="3.4" fill="#d32f2f" ${out(0.5)}/>`;
+}
+
+function gold(p: Pen): string {
+  const bar = (x: number, y: number) =>
+    `<path d="M${x + 5} ${y} H${x + 31} L${x + 36} ${y + 7} V${y + 17} H${x} V${y + 7}Z" fill="${p.fill('#f7b818', 0.15, -0.15)}" ${out()}/>
+    <path d="M${x + 5} ${y} H${x + 31} L${x + 36} ${y + 7} H${x}Z" fill="${p.fill('#ffe27a', 0.3, -0.05)}" ${out(0.5)}/>
+    ${shade(`M${x + 27} ${y + 8.5} H${x + 34.3} V${y + 15.3} H${x + 27}Z`, 0.09)}
+    ${shine(`M${x + 8} ${y + 3.5} H${x + 22}`, 2.5)}`;
+  const coin = (x: number, y: number, r: number) =>
+    `<circle cx="${x}" cy="${y}" r="${r}" fill="${p.fill('#f7b818', 0.2, -0.15)}" ${out()}/>
+    <circle cx="${x}" cy="${y}" r="${r - 4}" fill="none" stroke="#d48f0a" stroke-width="2"/>
+    <path d="M${x} ${y - 4} L${x + 1.3} ${y - 1.2} L${x + 4} ${y - 1} L${x + 2} ${y + 1} L${x + 2.6} ${y + 4} L${x} ${y + 2.4} L${x - 2.6} ${y + 4} L${x - 2} ${y + 1} L${x - 4} ${y - 1} L${x - 1.3} ${y - 1.2}Z" fill="#fff3c0"/>
+    ${shine(`M${x - r + 4} ${y - 2} Q${x - r + 5} ${y - r + 5} ${x - 2} ${y - r + 3}`, 2.2)}`;
+  return `${ground(50, 87, 42)}
+    ${bar(13, 66)}${bar(51, 66)}${bar(32, 49)}
+    ${coin(84, 74, 11)}
+    <ellipse cx="22" cy="88" rx="12" ry="5" fill="#d48f0a" ${out(0.7)}/><ellipse cx="22" cy="85" rx="12" ry="5" fill="${p.fill('#ffd54f', 0.3, -0.1)}" ${out(0.7)}/>
+    ${sparkle(80, 40, 8)}${sparkle(18, 50, 5.5)}${sparkle(64, 36, 4)}`;
+}
+
+function gem(p: Pen): string {
+  const outline = 'M22 36 L34 17 H66 L78 36 L50 89Z';
+  return `${ground(50, 93, 16)}
+    <path d="${outline}" fill="${p.fill('#4fc3f7', 0.3, -0.25)}"/>
+    <path d="M22 36 L34 17 L40 36Z" fill="#fff" opacity=".35"/>
+    <path d="M34 17 H66 L60 36 H40Z" fill="#fff" opacity=".5"/>
+    <path d="M66 17 L78 36 H60Z" fill="#000" opacity=".08"/>
+    <path d="M22 36 H40 L50 89Z" fill="#fff" opacity=".22"/>
+    <path d="M60 36 H78 L50 89Z" fill="#000" opacity=".16"/>
+    <path d="M22 36 H78 M34 17 L40 36 L50 89 M66 17 L60 36 L50 89" fill="none" ${out(0.5)}/>
+    <path d="${outline}" fill="none" ${out()}/>
+    ${shine('M28 32 L34 23', 2.5)}${shine('M44 22 H52', 2.5)}${shine('M32 42 L42 62', 2.5)}
+    ${sparkle(82, 16, 8.5)}${sparkle(15, 60, 5.5)}${sparkle(81, 62, 4.5)}`;
+}
+
+function jewels(p: Pen): string {
+  const pearls = Array.from({ length: 13 }, (_, i) => {
+    const a = (i / 12) * Math.PI;
+    return [50 + Math.cos(a) * 33, 12 + Math.sin(a) * 50];
+  });
+  const pearl = p.fill('#fff6ea', 0.4, -0.12);
+  return `${ground(50, 94, 30)}
+    <path d="M83 12 A33 50 0 0 1 17 12" fill="none" stroke="${OUT}" stroke-width="1.6"/>
+    ${pearls.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5.4" fill="${pearl}" ${out(0.5)}/><circle cx="${(x - 1.8).toFixed(1)}" cy="${(y - 1.8).toFixed(1)}" r="1.5" fill="#fff"/>`).join('')}
+    <path d="M50 92 Q35 82 36 73 Q37 66 43.5 66.5 Q48 67 50 71.5 Q52 67 56.5 66.5 Q63 66 64 73 Q65 82 50 92Z" fill="${p.fill('#e53950', 0.25, -0.2)}" ${out()}/>
+    ${shade('M60 69 Q65 74 62 81 Q58 87 51 91 Q60 80 60 69Z', 0.12)}
+    ${shine('M40 74 Q40 70 44 69.5', 2.5)}
+    <circle cx="50" cy="66" r="3.4" fill="${p.fill('#ffca28', 0.3, -0.15)}" ${out(0.5)}/>
+    <circle cx="17" cy="82" r="8" fill="none" stroke="${OUT}" stroke-width="7"/><circle cx="17" cy="82" r="8" fill="none" stroke="#ffca28" stroke-width="3.2"/>
+    <path d="M14 73.5 Q16 71 17 71 Q18 71 20 73.5" fill="none" stroke="#fff3c0" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M11 70 L14 65 H20 L23 70 L17 77Z" fill="${p.fill('#64b5f6', 0.3, -0.2)}" ${out(0.5)}/>
+    <path d="M14 65 L16 70 H11 M20 65 L18 70 H23" fill="none" stroke="#fff" stroke-width="1.2" opacity=".6"/>
+    ${sparkle(84, 74, 7)}${sparkle(50, 40, 4.5)}`;
+}
+
+function parcel(p: Pen): string {
+  const rib = '#e53935';
+  const ribbon = p.fill(rib, 0.2, -0.15);
+  return `${ground(52, 92, 40)}
+    <path d="M14 40 H70 V90 H14Z" fill="${p.fill('#d9a066')}" ${out()}/>
+    <path d="M70 40 L86 25 V75 L70 90Z" fill="${p.fill('#b98049', 0.1, -0.15)}" ${out()}/>
+    <path d="M14 40 L30 25 H86 L70 40Z" fill="${p.fill('#ecc08a', 0.2, -0.05)}" ${out()}/>
+    ${shine('M18 46 V82')}
+    <path d="M38.5 40 H45.5 V90 H38.5Z M14 61 H70 V68 H14Z" fill="${ribbon}" ${out(0.45)}/>
+    <path d="M70 61 L86 46 V53 L70 68Z" fill="${tone(rib, -0.2)}" ${out(0.45)}/>
+    <path d="M38.5 40 L54.5 25 H61.5 L45.5 40Z" fill="${ribbon}" ${out(0.45)}/>
+    <path d="M23 82 L32 82 M23 77 L29 77" stroke="${OUT}" stroke-width="1.6" stroke-linecap="round" opacity=".35"/>
+    <path d="M49 32 Q33 14 28 24 Q25 34 49 32Z M51 32 Q67 14 72 24 Q75 34 51 32Z" fill="${ribbon}" ${out(0.6)}/>
+    <path d="M47 31 Q36 22 33 26 M53 31 Q64 22 67 26" fill="none" stroke="#000" stroke-width="1.6" opacity=".18" stroke-linecap="round"/>
+    <path d="M47 34 L40 44 L44.5 43 L45 47 L50 36Z M53 34 L60 44 L55.5 43 L55 47 L50 36Z" fill="${ribbon}" ${out(0.5)}/>
+    <ellipse cx="50" cy="32" rx="5" ry="4.2" fill="${p.fill(rib, 0.25, -0.15)}" ${out(0.6)}/>
+    ${shine('M32 24 Q32 21 35 20', 2)}`;
+}
+
+function watering(p: Pen): string {
+  const body = p.fill('#4db6ac', 0.18, -0.15);
+  const handle = 'M58 44 Q58 18 38 20 Q16 23 24 68';
+  return `${ground(50, 93, 34)}
+    <path d="${handle}" fill="none" stroke="${OUT}" stroke-width="${7 + SW * 2}" stroke-linecap="round"/>
+    <path d="${handle}" fill="none" stroke="#3fa196" stroke-width="7" stroke-linecap="round"/>
+    ${shine('M28 36 Q30 25 40 23', 2.5)}
+    <path d="M68 72 L84 38 L91 43 L72 84Z" fill="${body}" ${out()}/>
+    <g transform="rotate(36 88 39)"><rect x="79" y="33" width="16" height="11" rx="4" fill="${p.fill('#80cbc4', 0.2, -0.15)}" ${out(0.8)}/>
+      <circle cx="93" cy="36.5" r="1" fill="${OUT}"/><circle cx="93" cy="40.5" r="1" fill="${OUT}"/></g>
+    <path d="M28 48 Q28 41 35 41 H67 Q74 41 74 48 L75 84 Q75 91 68 91 H34 Q27 91 27 84Z" fill="${body}" ${out()}/>
+    <ellipse cx="44" cy="44.5" rx="10" ry="3" fill="#2f7f77" ${out(0.5)}/>
+    <path d="M27.6 53 H74.4" stroke="#000" stroke-width="3" opacity=".12"/>
+    ${shade('M64 44 Q74 46 74 60 L74 84 Q73 90 65 90 Q70 70 64 44Z', 0.12)}
+    ${shine('M33 58 V82', 3.5)}
+    <g transform="translate(51 70)">${[0, 72, 144, 216, 288].map((a) => `<ellipse cx="0" cy="-6" rx="3.6" ry="5.4" fill="#fff8ee" ${out(0.35)} transform="rotate(${a})"/>`).join('')}
+      <circle r="3" fill="#ffd54f" ${out(0.35)}/></g>
+    <path d="M93 53 Q96 58 93 60 Q90 58 93 53Z M86 57 Q89 62 86 64 Q83 62 86 57Z" fill="#7cc8f2" ${out(0.35)}/>`;
+}
+
+function yarn(p: Pen): string {
+  const id = uid('yc');
+  const c = '#ec6fa0';
+  const dark = tone(c, -0.3);
+  const needle = (d: string) =>
+    `<path d="${d}" stroke="${OUT}" stroke-width="6.5" stroke-linecap="round"/><path d="${d}" stroke="#d6dde2" stroke-width="3" stroke-linecap="round"/>`;
+  const thread = 'M70 74 Q88 76 87 86 Q86 94 96 92';
+  const wraps = [
+    'M14 46 Q46 30 76 50', 'M16 60 Q46 42 78 64', 'M22 74 Q48 56 74 78',
+    'M30 24 Q24 54 38 84', 'M46 22 Q38 54 52 86', 'M62 26 Q54 56 66 82',
+  ].join(' ');
+  return `${ground(48, 89, 30)}
+    ${needle('M58 32 L78 8')}${needle('M64 36 L90 20')}
+    <circle cx="78" cy="8" r="4.2" fill="${p.fill('#ffca28', 0.3, -0.15)}" ${out(0.5)}/><circle cx="90" cy="20" r="4.2" fill="${p.fill('#64b5f6', 0.3, -0.15)}" ${out(0.5)}/>
+    <clipPath id="${id}"><circle cx="46" cy="56" r="30"/></clipPath>
+    <circle cx="46" cy="56" r="30" fill="${p.fill(c, 0.2, -0.15)}"/>
+    <g clip-path="url(#${id})">
+      <path d="${wraps}" fill="none" stroke="${dark}" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="${wraps}" fill="none" stroke="#fff" stroke-width="1.2" opacity=".35" transform="translate(-1.5 -1.5)"/>
+      ${shade('M76 56 A30 30 0 0 1 16 56 Q22 80 46 82 Q70 80 76 56Z', 0.12)}
+    </g>
+    <circle cx="46" cy="56" r="30" fill="none" ${out()}/>
+    <path d="${thread}" fill="none" stroke="${OUT}" stroke-width="${3 + SW * 1.4}" stroke-linecap="round"/>
+    <path d="${thread}" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+    ${shine('M24 44 Q27 34 37 29', 3.5)}`;
+}
+
+function toolbox(p: Pen): string {
+  const red = p.fill('#e5463f', 0.18, -0.15);
+  const steel = p.fill('#b0bec5', 0.3, -0.15);
+  const handle = 'M38 40 Q38 24 50 24 Q62 24 62 40';
+  return `${ground(50, 92, 42)}
+    <rect x="20" y="16" width="11" height="26" rx="4.5" fill="${p.fill('#ffca28', 0.25, -0.15)}" ${out(0.7)}/>
+    <path d="M23.5 21 V36 M27.5 21 V36" stroke="#000" stroke-width="1.6" opacity=".18" stroke-linecap="round"/>
+    <path d="M74 42 V28" stroke="${OUT}" stroke-width="${6 + SW * 1.4}" stroke-linecap="round"/><path d="M74 42 V28" stroke="#b0bec5" stroke-width="6" stroke-linecap="round"/>
+    <path d="M67 26 Q66 17 70.5 15 V21 H77.5 V15 Q82 17 81 26 Q79 31 74 31 Q69 31 67 26Z" fill="${steel}" ${out(0.7)}/>
+    <path d="${handle}" fill="none" stroke="${OUT}" stroke-width="${6 + SW * 2}" stroke-linecap="round"/>
+    <path d="${handle}" fill="none" stroke="#78909c" stroke-width="6" stroke-linecap="round"/>
+    ${shine('M41 34 Q42 28 48 27', 2)}
+    <path d="M12 48 H88 V84 Q88 91 81 91 H19 Q12 91 12 84Z" fill="${red}" ${out()}/>
+    ${shade('M76 52 H88 V84 Q88 91 81 91 H64 Q78 82 76 52Z', 0.12)}
+    <path d="M9 44 Q9 38 15 38 H85 Q91 38 91 44 V52 Q91 55 88 55 H12 Q9 55 9 52Z" fill="${red}" ${out()}/>
+    ${shine('M15 43 H58', 2.5)}${shine('M18 62 V82')}
+    <path d="M14 70 H86" stroke="#000" stroke-width="2.5" opacity=".12"/>
+    <rect x="43" y="50" width="14" height="12" rx="3" fill="${steel}" ${out(0.6)}/>
+    <circle cx="50" cy="56" r="1.8" fill="${OUT}"/>`;
+}
+
+const ITEM_DRAW: Record<ItemKind, (p: Pen) => string> = { cake, ball, flowers, bone, icecream, teddy, gold, gem, jewels, parcel, watering, yarn, toolbox };
+
 export function itemSvg(kind: ItemKind): string {
-  const s = (inner: string) => `<svg viewBox="0 0 100 100" width="100" height="100">${inner}</svg>`;
-  switch (kind) {
-    case 'cake':
-      return s(`<rect x="16" y="46" width="68" height="40" rx="6" fill="#f7d7a8" stroke="${OUT}" stroke-width="4"/>
-        <path d="M16 54 Q24 64 32 54 Q40 64 50 54 Q58 64 66 54 Q74 64 84 54 L84 46 L16 46Z" fill="#f48fb1" stroke="${OUT}" stroke-width="4"/>
-        <rect x="46" y="22" width="8" height="24" rx="3" fill="#7ec8f0" stroke="${OUT}" stroke-width="3"/>
-        <path d="M50 8 Q58 16 50 22 Q42 16 50 8Z" fill="#ffc531" stroke="${OUT}" stroke-width="3"/>
-        <circle cx="30" cy="70" r="4" fill="#e53935"/><circle cx="50" cy="74" r="4" fill="#e53935"/><circle cx="70" cy="70" r="4" fill="#e53935"/>`);
-    case 'ball':
-      return s(`<circle cx="50" cy="52" r="36" fill="#ffd54f" stroke="${OUT}" stroke-width="4"/>
-        <path d="M14 52 Q50 30 86 52" fill="none" stroke="#e53935" stroke-width="8"/>
-        <path d="M50 16 Q36 52 50 88" fill="none" stroke="#1e88e5" stroke-width="8"/>
-        <circle cx="50" cy="52" r="36" fill="none" stroke="${OUT}" stroke-width="4"/>`);
-    case 'flowers':
-      return s(`<path d="M50 90 L46 50 M50 90 L30 46 M50 90 L70 46" stroke="#3a9b54" stroke-width="5"/>
-        ${[
-          [30, 40, '#f06292'],
-          [50, 30, '#ffca28'],
-          [70, 40, '#ba68c8'],
-        ]
-          .map(
-            ([x, y, c]) =>
-              `<g transform="translate(${x} ${y})">${[0, 72, 144, 216, 288]
-                .map((a) => `<circle cx="0" cy="-10" r="8" fill="${c}" stroke="${OUT}" stroke-width="2.5" transform="rotate(${a})"/>`)
-                .join('')}<circle r="6" fill="#fff59d" stroke="${OUT}" stroke-width="2.5"/></g>`,
-          )
-          .join('')}
-        <path d="M30 70 L70 70 L60 94 L40 94Z" fill="#90caf9" stroke="${OUT}" stroke-width="4"/>`);
-    case 'bone':
-      return s(`<g transform="rotate(-20 50 50)"><path d="M26 42 a10 10 0 1 1 6 -14 L68 28 a10 10 0 1 1 6 14 a10 10 0 1 1 -6 14 L32 56 a10 10 0 1 1 -6 -14Z" fill="#fff8e1" stroke="${OUT}" stroke-width="4" transform="translate(0 8)"/></g>`);
-    case 'icecream':
-      return s(`<path d="M32 50 L50 94 L68 50Z" fill="#e0a85a" stroke="${OUT}" stroke-width="4"/>
-        <path d="M38 58 L60 58 M42 70 L58 70" stroke="#b07a35" stroke-width="3"/>
-        <circle cx="38" cy="44" r="15" fill="#f8bbd0" stroke="${OUT}" stroke-width="4"/>
-        <circle cx="62" cy="44" r="15" fill="#c5e1a5" stroke="${OUT}" stroke-width="4"/>
-        <circle cx="50" cy="28" r="15" fill="#fff3e0" stroke="${OUT}" stroke-width="4"/>
-        <circle cx="50" cy="12" r="6" fill="#e53935" stroke="${OUT}" stroke-width="3"/>`);
-    case 'teddy':
-      return s(`<circle cx="28" cy="24" r="11" fill="#b5835a" stroke="${OUT}" stroke-width="4"/>
-        <circle cx="72" cy="24" r="11" fill="#b5835a" stroke="${OUT}" stroke-width="4"/>
-        <ellipse cx="50" cy="72" rx="26" ry="22" fill="#b5835a" stroke="${OUT}" stroke-width="4"/>
-        <circle cx="50" cy="40" r="24" fill="#b5835a" stroke="${OUT}" stroke-width="4"/>
-        <ellipse cx="50" cy="48" rx="10" ry="8" fill="#e8c9a6"/>
-        <circle cx="50" cy="45" r="4" fill="${OUT}"/>
-        <circle cx="41" cy="36" r="3.5" fill="${OUT}"/><circle cx="59" cy="36" r="3.5" fill="${OUT}"/>
-        <path d="M40 64 L50 70 L60 64 L50 58Z" fill="#e53935" stroke="${OUT}" stroke-width="2"/>`);
-    case 'gold':
-      return s(`<ellipse cx="50" cy="88" rx="40" ry="7" fill="#000" opacity=".12"/>
-        ${[
-          [14, 62],
-          [50, 62],
-          [32, 38],
-        ]
-          .map(
-            ([x, y]) => `<g transform="translate(${x} ${y})"><path d="M0 24 L6 4 L32 4 L38 24Z" fill="#ffca28" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
-              <path d="M8 8 L28 8" stroke="#fff8e1" stroke-width="3" stroke-linecap="round"/><path d="M4 20 L34 20" stroke="#f9a825" stroke-width="3"/></g>`,
-          )
-          .join('')}
-        <path d="M82 20 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3Z" fill="#fff"/>`);
-    case 'gem':
-      return s(`<path d="M24 34 L36 16 L64 16 L76 34 L50 88Z" fill="#4fc3f7" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
-        <path d="M24 34 H76 M36 16 L44 34 L50 88 M64 16 L56 34 L50 88 M44 34 L50 16 L56 34" fill="none" stroke="${OUT}" stroke-width="2.5" stroke-linejoin="round"/>
-        <path d="M30 32 L38 20 L44 32Z" fill="#e1f5fe"/>
-        <path d="M84 14 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3Z M16 58 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 l5 -2Z" fill="#fff"/>`);
-    case 'jewels':
-      return s(`<path d="M14 54 L86 54 L80 88 L20 88Z" fill="#c2185b" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
-        <path d="M14 54 L22 30 L78 30 L86 54" fill="#f48fb1" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
-        <path d="M26 54 Q50 82 74 54" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="1 7" stroke-linecap="round"/>
-        <circle cx="50" cy="70" r="6" fill="#e53935" stroke="${OUT}" stroke-width="2.5"/>
-        <circle cx="36" cy="36" r="7" fill="none" stroke="#ffca28" stroke-width="4"/><path d="M33 28 l3 -5 l3 5Z" fill="#81d4fa" stroke="${OUT}" stroke-width="1.5"/>
-        <circle cx="64" cy="42" r="5" fill="#ab47bc" stroke="${OUT}" stroke-width="2"/>`);
-    case 'parcel':
-      return s(`<path d="${wob([[14, 30], [86, 30], [86, 88], [14, 88]], 1.2)}" fill="#d9a066" stroke="${OUT}" stroke-width="4"/>
-        <path d="M14 30 L30 14 L100 14 L86 30Z" fill="#e8b97c" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
-        <path d="M86 30 L100 14 L100 72 L86 88Z" fill="#c38a52" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
-        <path d="M50 30 V88 M14 58 H86" stroke="#e53935" stroke-width="6"/>
-        <path d="M40 24 Q50 10 50 30 Q50 10 60 24" fill="none" stroke="#e53935" stroke-width="4"/>`);
-    case 'yarn':
-      return s(`<path d="M74 70 Q92 84 84 94 Q76 100 90 98" fill="none" stroke="#ec407a" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="48" cy="56" r="32" fill="#f06292" stroke="${OUT}" stroke-width="4"/>
-        <path d="M22 44 Q48 30 74 50 M18 60 Q48 44 78 66 M24 76 Q50 60 72 80 M36 26 Q30 56 44 86 M54 24 Q46 56 62 88" fill="none" stroke="#c2185b" stroke-width="3" opacity=".8"/>
-        <path d="M30 36 Q38 28 48 28" stroke="#fff" stroke-width="4" fill="none" opacity=".5" stroke-linecap="round"/>`);
-    case 'toolbox':
-      return s(`<path d="M36 34 Q36 20 50 20 Q64 20 64 34" fill="none" stroke="${OUT}" stroke-width="9"/><path d="M36 34 Q36 20 50 20 Q64 20 64 34" fill="none" stroke="#90a4ae" stroke-width="5"/>
-        <path d="${wob([[10, 34], [90, 34], [90, 86], [10, 86]], 1)}" fill="#e53935" stroke="${OUT}" stroke-width="4"/>
-        <path d="M10 50 H90" stroke="${OUT}" stroke-width="3"/><rect x="42" y="44" width="16" height="12" rx="3" fill="#cfd8dc" stroke="${OUT}" stroke-width="2.5"/>
-        <path d="M16 38 H60" stroke="#fff" stroke-width="3" opacity=".45" stroke-linecap="round"/>`);
-    case 'watering':
-      return s(`<path d="M24 40 L76 40 L72 88 L28 88Z" fill="#4db6ac" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
-        <path d="M74 52 L96 30" stroke="${OUT}" stroke-width="10" stroke-linecap="round"/><path d="M74 52 L96 30" stroke="#4db6ac" stroke-width="5" stroke-linecap="round"/>
-        <ellipse cx="97" cy="28" rx="6" ry="4" fill="#80cbc4" stroke="${OUT}" stroke-width="2.5" transform="rotate(-45 97 28)"/>
-        <path d="M30 40 Q50 6 70 40" fill="none" stroke="${OUT}" stroke-width="5"/>
-        <path d="M32 56 H68" stroke="#fff" stroke-width="3" opacity=".5"/>`);
-  }
+  const p = new Pen();
+  const inner = ITEM_DRAW[kind](p);
+  return `<svg viewBox="0 0 100 100" width="100" height="100">${p.flush()}${inner}</svg>`;
 }
 
 // ---------- Scenery props ----------
@@ -451,9 +660,12 @@ export function fenceSvg(w: number): string {
   return `<svg viewBox="0 0 ${w} 46" width="${w}" height="46"><ellipse cx="${w / 2}" cy="44" rx="${w / 2}" ry="3" fill="#000" opacity=".15"/><path d="M0 18 H${w} M0 32 H${w}" stroke="${OUT}" stroke-width="7"/><path d="M0 18 H${w} M0 32 H${w}" stroke="#efe3d0" stroke-width="3.5"/>${posts}</svg>`;
 }
 
-/** Handcuffs, 40 x 20, drawn at the rosvo's wrists. */
+/** Handcuffs, 40 x 20, drawn at the rosvo's wrists. The rings stay at 50,132 and 70,132. */
 export function cuffsSvg(): string {
-  return `<g class="cuffs"><circle cx="50" cy="132" r="7" fill="none" stroke="${OUT}" stroke-width="6"/><circle cx="50" cy="132" r="7" fill="none" stroke="#cfd8dc" stroke-width="3"/>
-    <circle cx="70" cy="132" r="7" fill="none" stroke="${OUT}" stroke-width="6"/><circle cx="70" cy="132" r="7" fill="none" stroke="#cfd8dc" stroke-width="3"/>
-    <path d="M57 132 H63" stroke="#90a4ae" stroke-width="3"/></g>`;
+  const ring = (x: number) => `<circle cx="${x}" cy="132" r="7" fill="none" stroke="${OUT}" stroke-width="6.5"/><circle cx="${x}" cy="132" r="7" fill="none" stroke="#cfd8dc" stroke-width="3.2"/>
+    <path d="M${x - 6.6} 129.6 A7 7 0 0 1 ${x - 1.2} 125.1" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>
+    <path d="M${x + 6.6} 134.4 A7 7 0 0 1 ${x + 1.2} 138.9" fill="none" stroke="#78909c" stroke-width="1.6" stroke-linecap="round"/>`;
+  return `<g class="cuffs">${ring(50)}${ring(70)}
+    <ellipse cx="58.3" cy="132" rx="2.4" ry="1.7" fill="none" stroke="${OUT}" stroke-width="2.6"/><ellipse cx="61.7" cy="132" rx="2.4" ry="1.7" fill="none" stroke="${OUT}" stroke-width="2.6"/>
+    <ellipse cx="58.3" cy="132" rx="2.4" ry="1.7" fill="none" stroke="#b0bec5" stroke-width="1.1"/><ellipse cx="61.7" cy="132" rx="2.4" ry="1.7" fill="none" stroke="#b0bec5" stroke-width="1.1"/></g>`;
 }
