@@ -5,13 +5,12 @@
 // hands, body, legs) in one soft "storybook" style.
 
 import { OUT, cuffsSvg, type ItemKind } from './art';
-import { tone, uid } from './draw';
+import { Pen, SW, out, shade, shine, tone, uid } from './draw';
 import type { BuildingKind } from './buildings';
 
 export const SKINS = ['#fde3cf', '#f2c4a0', '#dba67c', '#b87a4e', '#8c5636', '#5f3b26'];
 const HAIR_COLORS = ['#1f1612', '#3b2417', '#6b3f1f', '#a9622a', '#d9a64a', '#8a8a8a'];
 const BLUSH = '#f08a8a';
-const SW = 3.5;
 
 export type HairStyle = 'short' | 'spiky' | 'curly' | 'bald' | 'ponytail' | 'long' | 'buns' | 'bob' | 'braids';
 const FEMALE_HAIR: HairStyle[] = ['ponytail', 'long', 'buns', 'bob', 'curly', 'braids'];
@@ -61,30 +60,6 @@ export function randomLooks(n: number): Look[] {
 
 // ---------- Drawing parts ----------
 
-/** Collects gradient defs for one drawing and holds the shared part drawers. */
-class Pen {
-  private defs: string[] = [];
-
-  /** A soft top-lit gradient fill for a base colour. */
-  fill(base: string): string {
-    const id = uid('pg');
-    this.defs.push(
-      `<linearGradient id="${id}" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="${tone(base, 0.16)}"/><stop offset="1" stop-color="${tone(base, -0.12)}"/></linearGradient>`,
-    );
-    return `url(#${id})`;
-  }
-  /** The defs collected so far, emptied, ready to put in front of the drawing. */
-  flush(): string {
-    const d = this.defs.length ? `<defs>${this.defs.join('')}</defs>` : '';
-    this.defs = [];
-    return d;
-  }
-}
-
-const out = (k = 1) => `stroke="${OUT}" stroke-width="${(SW * k).toFixed(1)}" stroke-linejoin="round"`;
-const shade = (d: string, a = 0.1) => `<path d="${d}" fill="#000" opacity="${a}"/>`;
-const shine = (d: string, w = 3) =>
-  `<path d="${d}" fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" opacity=".45"/>`;
 const blinkDelay = () => `style="animation-delay:${(Math.random() * 4).toFixed(2)}s"`;
 
 /** A bendy arm: an outlined round-capped stroke, optionally striped. */
