@@ -4,7 +4,7 @@
 import * as art from './art';
 import { backdropSvg, chimneySpotSvg, treeSvg } from './buildings';
 import { SKY, TILES, propArt, vanArt } from './images';
-import { BASE_Y, CAR, CELLS, H, SHELF, SPOTS, STATION, W, peekH, peekW, placeBuilding, type Placed, type SpotDef } from './layout';
+import { BASE_Y, CAR, CELLS, H, LAMPS, NEAR_LAMP, SHELF, SPOTS, STATION, W, peekH, peekW, placeBuilding, type Placed, type SpotDef } from './layout';
 import { policeHead } from './people';
 import { town } from './town';
 import { Sprite } from './tween';
@@ -174,16 +174,17 @@ export function buildScene(app: HTMLElement): Scene {
   town.buildings.forEach((b, i) => picture(stage, placeBuilding(b.kind, i), BASE_Y - (b.kind === 'bank' ? 2 : i === 3 ? 1 : 0)));
 
   // Street furniture.
-  for (const x of [536, 1072]) lamp(stage, x, 502);
+  for (const x of LAMPS) lamp(stage, x, 502);
+  lamp(stage, NEAR_LAMP.x, NEAR_LAMP.y, NEAR_LAMP.k);
   const bench = propArt('bench');
   // The bench sits on the lawn by the sidewalk, between the playground and the bush.
-  if (bench) picture(stage, { art: { ...bench, door: 0, roof: [] }, x: 470, y: 656 - bench.h }, 656);
+  if (bench) picture(stage, { art: { ...bench, door: 0, roof: [] }, x: 506, y: 656 - bench.h }, 656);
   else place(div('prop', stage, art.benchSvg()), 12, 686, 736);
   place(div('prop', stage, art.stallBackSvg()), 1015, 548, 600);
   if (town.fence) {
     const fence = propArt('fence');
     if (fence) {
-      picture(stage, { art: { ...fence, door: 0, roof: [] }, x: 618, y: 622 - fence.h }, 621);
+      picture(stage, { art: { ...fence, door: 0, roof: [] }, x: 664, y: 622 - fence.h }, 621);
     } else {
       place(div('prop', stage, art.fenceSvg(140)), 392, 574, 619);
       place(div('prop', stage, art.fenceSvg(96)), 1104, 578, 619);
@@ -309,13 +310,14 @@ function buildCar(stage: HTMLElement): { car: HTMLElement; riderAt: (i: number) 
   return { car, riderAt: (i) => (i < 2 ? `translate(${rear.x - 2 + i * 24} ${rear.y + 8}) scale(.27)` : null) };
 }
 
-/** Street lamp standing on the back sidewalk (picture if present), with a glow that lights up in the evening. */
-function lamp(stage: HTMLElement, cx: number, bottom: number): void {
-  const a = propArt('lamp');
-  if (!a) {
+/** Street lamp on a sidewalk (picture if present, k = size), with a glow that lights up in the evening. */
+function lamp(stage: HTMLElement, cx: number, bottom: number, k = 1): void {
+  const pic = propArt('lamp');
+  if (!pic) {
     place(div('prop lamp', stage, art.lampSvg()), cx - 30, bottom - 258, bottom);
     return;
   }
+  const a = { w: pic.w * k, h: pic.h * k };
   const el = place(div('prop lamp', stage), cx - a.w / 2, bottom - a.h, bottom);
-  el.innerHTML = `<img src="${a.url}" width="${a.w}" height="${a.h}" alt=""><div class="glow lamp-glow" style="left:${a.w / 2 - 40}px;top:${a.h * 0.17 - 40}px"></div>`;
+  el.innerHTML = `<img src="${pic.url}" width="${a.w}" height="${a.h}" alt=""><div class="glow lamp-glow" style="left:${a.w / 2 - 40}px;top:${a.h * 0.17 - 40}px"></div>`;
 }

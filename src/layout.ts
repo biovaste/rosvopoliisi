@@ -150,19 +150,39 @@ const roof = spot('roof', 'rosvo', STATION.x + 70, STATION.y + roofAt(stationArt
 roof.s = 0.58;
 roof.far = true;
 
+// ---------- Street furniture ----------
+
+/** Where two neighbouring buildings meet (centre of their overlap). */
+const seam = (i: number): number => {
+  const a = placeBuilding(town.buildings[i].kind, i);
+  return a.x + a.art.w - 3;
+};
+/** Street lamps on the back sidewalk stand in the gaps between houses (bottom at y 502). */
+export const LAMPS: number[] = [seam(0), seam(2)];
+/** A bigger lamp on the near sidewalk, across the street. */
+export const NEAR_LAMP: Pt & { k: number } = { x: 900, y: 613, k: 1.2 };
+
+/** Mailbox spot on the back sidewalk: varies per session but never by a lamp or a door. */
+function mailboxX(): number {
+  const avoid = [...LAMPS.map((x) => [x, 80]), ...town.buildings.map((b) => [doorOf(b.kind).x, b.kind === 'bank' ? 90 : 60])];
+  const ok: number[] = [];
+  for (let x = 380; x <= 1140; x += 20) if (avoid.every(([a, r]) => Math.abs(x - a) >= r)) ok.push(x);
+  return ok.length ? ok[Math.floor(Math.random() * ok.length)] : SLOT_CX[0] - 62;
+}
+
 export const SPOTS: SpotDef[] = [
   ...chimneySpots(),
   backTree,
   roof,
-  withArt(spot('mailbox', 'stash', 548, 500, 60, 90, 22), 'mailbox', 0.12),
-  // Playground: slide and tunnel side by side on the sand.
-  withArt(spot('slide', 'rosvo', 108, 776, 220, 170, 40), 'slide', 0.3, 0.3),
-  withArt(spot('tunnel', 'both', 362, 795, 170, 96, 30), 'tunnel', 0.12),
-  // Lawn: bush and the small tree.
-  withArt(spot('bush', 'both', 560, 795, 200, 120, 50), 'bush', 0.4),
+  withArt(spot('mailbox', 'stash', mailboxX(), 500, 60, 90, 22), 'mailbox', 0.12),
+  // Playground: slide and tunnel side by side on the sand, with a gap between.
+  withArt(spot('slide', 'rosvo', 92, 776, 220, 170, 40), 'slide', 0.3, 0.3, 0.9),
+  withArt(spot('tunnel', 'both', 386, 795, 170, 96, 30), 'tunnel', 0.12, 0.5, 0.83),
+  // Lawn: bush in front, the small tree further back.
+  withArt(spot('bush', 'both', 588, 795, 200, 120, 50), 'bush', 0.4, 0.5, 0.85),
   propArt('tree-birch')
-    ? withArt(spot('tree', 'both', 700, 712, 150, 225, 38, 712, 0.75), 'tree-birch', 0.08)
-    : withArt(spot('tree', 'both', 700, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
+    ? withArt(spot('tree', 'both', 742, 712, 150, 225, 38, 712, 0.75), 'tree-birch', 0.08)
+    : withArt(spot('tree', 'both', 742, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
   // Market square: planter in front, crates behind, sacks by the stall.
   withArt(spot('planter', 'stash', 852, 795, 120, 76, 26), 'planter', 0.3),
   withArt(spot('crates', 'both', 962, 735, 160, 140, 30, 735), 'crates', 0.07),

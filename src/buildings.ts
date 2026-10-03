@@ -101,7 +101,7 @@ export function backdropSvg(t: { grass: TileArt | null; sand: TileArt | null; si
     <path d="${wob(rect(-300, 587, 1800, 28), 1)}" fill="${walk.paint}" ${edge}/>
     <path d="M-300 615 H1500 V840 H-300Z" fill="${grass.paint}"/>
     <path d="M-300 615 H1500" ${edge}/>
-    <path d="M14 646 Q230 616 450 642 Q478 730 452 800 L14 800Z" fill="${sand.paint}" ${edge}/>
+    <path d="M14 646 Q240 616 486 642 Q512 730 490 800 L14 800Z" fill="${sand.paint}" ${edge}/>
     <path d="M776 615 H1500 V820 H752 Q730 712 776 615Z" fill="${plaza.paint}" ${edge}/>
   </svg>`;
 }
