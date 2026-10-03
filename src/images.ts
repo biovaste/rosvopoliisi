@@ -50,4 +50,11 @@ export const TILES = {
 const S = meta.skies as Record<string, { w: number; h: number }>;
 const skyArt = (name: string): TileArt | null => (S[name] && url(name) ? { url: url(name) as string, ...S[name] } : null);
 
+const P = (meta as { props?: Record<string, { w: number; h: number }> }).props ?? {};
+
+/** Generated hiding-spot props (trees, bush, crates, slide), if present. */
+export function propArt(name: string): TileArt | null {
+  return P[name] && url(name) ? { url: url(name) as string, ...P[name] } : null;
+}
+
 export const SKY = { day: skyArt('sky-day'), evening: skyArt('sky-evening'), night: skyArt('sky-night') };

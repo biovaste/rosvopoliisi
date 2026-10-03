@@ -23,8 +23,8 @@ export function makeTown(): Town {
   }
   return {
     buildings: kinds.map((kind) => ({ kind })),
-    backTree: pick(['apple', 'round', 'autumn'] as TreeStyle[]),
-    nearTree: pick(['apple', 'round', 'autumn'] as TreeStyle[]),
+    backTree: pick(['apple', 'autumn'] as TreeStyle[]),
+    nearTree: pick(['apple', 'autumn'] as TreeStyle[]),
     bush: pick(['#5aac44', '#4e9f3d', '#6cbf4a']),
     fence: Math.random() < 0.7,
     police: randomLook(),

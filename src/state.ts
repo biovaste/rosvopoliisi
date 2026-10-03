@@ -11,7 +11,8 @@ export type Phase =
   | 'caught' // rosvo caught, waiting to be dragged to jail
   | 'carrying' // child is dragging the rosvo
   | 'returning' // child finds the stashed item and returns it to its owner
-  | 'celebrating'; // jail is full
+  | 'celebrating' // jail is full
+  | 'ended'; // session time is up: showing the stickers
 
 export type TimeOfDay = 'day' | 'evening' | 'night';
 export const TIMES: TimeOfDay[] = ['day', 'evening', 'night'];
@@ -70,6 +71,9 @@ export interface State {
   itemRest: Pt;
   drag: Drag | null;
   stickers: number;
+  /** Session length chosen by an adult (0 = unlimited). */
+  limitMin: number;
+  startedAt: number;
   lastInput: number;
   hintOn: boolean;
   panelOpen: boolean;
@@ -95,6 +99,8 @@ export const state: State = {
   itemRest: { x: 0, y: 0 },
   drag: null,
   stickers: 0,
+  limitMin: 0,
+  startedAt: 0,
   lastInput: 0,
   hintOn: false,
   panelOpen: false,

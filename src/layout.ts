@@ -2,7 +2,7 @@
 // Things further up the screen are further away and drawn smaller (see depth()).
 
 import type { BuildingKind } from './buildings';
-import { BUILDING_ART, roofAt, type BuildingArt } from './images';
+import { BUILDING_ART, propArt, roofAt, type BuildingArt, type TileArt } from './images';
 import { town } from './town';
 
 export const W = 1200;
@@ -88,6 +88,10 @@ export interface SpotDef {
   land: Pt;
   /** Scale of the object drawing (w, h and clip are already scaled). */
   os: number;
+  /** Generated picture used for the object, if any. */
+  art?: TileArt;
+  /** Where the peek point sits across the object (0 left .. 1 right). */
+  ax: number;
 }
 
 export const PEEK_W = 130;
@@ -97,7 +101,7 @@ function spot(kind: SpotKind, use: SpotUse, x: number, bottom: number, w: number
   const top = bottom - h;
   const far = bottom < 600;
   const landY = far ? 640 : clamp(bottom + 6, 640, 796);
-  return { kind, use, x, top, w, h, clip, s: depth(far ? 470 : bottom - 10), z, far, land: { x: clamp(x, 420, 1100), y: landY }, os };
+  return { kind, use, x, top, w, h, clip, s: depth(far ? 470 : bottom - 10), z, far, land: { x: clamp(x, 420, 1100), y: landY }, os, ax: 0.5 };
 }
 
 function chimneySpots(): SpotDef[] {
@@ -117,7 +121,16 @@ function chimneySpots(): SpotDef[] {
   return out;
 }
 
-const backTree = spot('tree', 'both', 887, 460, 200, 300, 40, 290);
+/** Swaps a spot's drawn object for a generated picture (if present), keeping its bottom edge. */
+function withArt(d: SpotDef, name: string, clipFrac: number, ax = 0.5, os = 1): SpotDef {
+  const a = propArt(name);
+  if (!a) return d;
+  const w = a.w * os;
+  const h = a.h * os;
+  return { ...d, art: { ...a, w, h }, w, h, top: d.top + d.h - h, clip: clipFrac * h, ax, os: 1 };
+}
+
+const backTree = withArt(spot('tree', 'both', 873, 452, 200, 300, 40, 290), `tree-${town.backTree}`, 0.1);
 backTree.s = 0.55;
 const roof = spot('roof', 'rosvo', STATION.x + 70, STATION.y + roofAt(stationArt, 55) + 10, 0, 0, 8, 299);
 roof.s = 0.58;
@@ -128,12 +141,12 @@ export const SPOTS: SpotDef[] = [
   backTree,
   roof,
   spot('mailbox', 'stash', 548, 500, 60, 90, 22),
-  spot('slide', 'rosvo', 150, 770, 220, 170, 40),
+  withArt(spot('slide', 'rosvo', 150, 770, 220, 170, 40), 'slide', 0.3, 0.3),
   spot('tunnel', 'both', 330, 790, 170, 96, 30),
-  spot('bush', 'both', 500, 795, 200, 120, 50),
-  spot('tree', 'both', 670, 712, 150, 225, 38, 712, 0.75),
+  withArt(spot('bush', 'both', 500, 795, 200, 120, 50), 'bush', 0.4),
+  withArt(spot('tree', 'both', 670, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
   spot('planter', 'stash', 790, 795, 120, 76, 26),
-  spot('crates', 'both', 900, 760, 160, 140, 30),
+  withArt(spot('crates', 'both', 900, 760, 160, 140, 30), 'crates', 0.07),
   spot('sacks', 'stash', 1010, 798, 130, 84, 30),
   spot('stall', 'rosvo', 1110, 750, 190, 96, 22),
 ];

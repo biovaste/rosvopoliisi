@@ -43,7 +43,9 @@ for both.
 - Rooftop, chimney and back-tree spots unlock.
 
 The gentle help is unchanged: after 2 misses the rosvo holds still and
-wiggles, and after 10 seconds without a touch a hint hand appears.
+wiggles, and after 10 seconds without a touch a hint hand appears. While the
+child looks for the stolen loot, a glow around it grows over those 10 seconds
+before the hand points at it.
 
 **Looks.** Skin tone, hair and gender are chosen the same random way for
 rosvot, townspeople and the police officer.
@@ -70,12 +72,19 @@ If the tablet can't connect, allow Node through the computer's firewall.
 
 ## Parent controls
 
-Hold the small lock button in the top-left corner for 3 seconds to open the
-panel with the mute and fullscreen buttons.
+- **Session length:** on the start screen, hold the clock button in the bottom
+  right corner for 2 seconds. Pick unlimited (∞) or 5, 10, 15, 20 or 30
+  minutes; the clock faces show the time as a filled wedge, with no text. The
+  choice is remembered on the device. When the time is up, the current level
+  is still played to the end, then an end screen shows the stickers earned.
+  Holding the corner button there for 3 seconds starts a new session.
+- **Sound and fullscreen:** during play, hold the small lock button in the top
+  left corner for 3 seconds to open the panel with mute and fullscreen.
 
 ## Artwork
 
-The sky, buildings and ground textures are AI-generated images. Characters,
+The sky, buildings, ground textures, trees, bush, crates and slide are
+AI-generated images. Characters,
 hiding objects, items and the car are drawn in code, because they animate,
 change colours and hide a peeking rosvo.
 

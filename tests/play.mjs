@@ -75,12 +75,27 @@ function check(cond, msg) {
 
 await page.goto(URL);
 await page.screenshot({ path: `${OUT}/00-start.png` });
+// Session length: an adult holds the clock on the start screen and picks a duration.
+await touch('touchStart', [{ x: 978, y: 722 }]);
+await sleep(2300);
+await touch('touchEnd', []);
+const pick = await page.evaluate(() => {
+  const r = document.querySelector('.session-choice[data-m="10"]').getBoundingClientRect();
+  return { open: document.querySelector('.session-picker').classList.contains('open'), x: r.x + r.width / 2, y: r.y + r.height / 2 };
+});
+check(pick.open, 'session clock opens after a 2 s hold on the start screen');
+await page.screenshot({ path: `${OUT}/00-session-picker.png` });
+await tap(pick);
+const saved = await page.evaluate(() => localStorage.getItem('rosvopoliisi.minutes'));
+check(saved === '10', 'chosen session length (10 min) is remembered');
 await tap({ x: 512, y: 384 });
 
 let shot = 1;
 let sawRun = false;
 for (let cycle = 0; cycle < 2; cycle++) {
   console.log(`cycle ${cycle + 1}`);
+  // In the second level, pretend the chosen play time has run out.
+  if (cycle === 1) await page.evaluate(() => window.__rosvo.setLimit(0.001));
   for (let r = 0; r < 3; r++) {
     let s = await waitFor((s) => s.phase === 'hiding' && !s.busy, 'hiding');
     check(s.jailed === r, `robbery ${r + 1}: rosvo hiding, ${r} in jail (time=${s.time})`);
@@ -151,6 +166,11 @@ for (let cycle = 0; cycle < 2; cycle++) {
     t = await tg();
     check(!s.itemOut, 'loot is stashed in a hiding spot');
     if (cycle === 0 && r === 0) {
+      // Left alone, the lost loot starts to shine more and more.
+      await sleep(7000);
+      const halo = await page.evaluate(() => window.__rosvo.halo());
+      check(halo > 0.5, `lost loot shines when nobody touches the screen (halo ${halo.toFixed(2)})`);
+      await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-shine.png` });
       // Loot dropped away from its owner floats back.
       await drag(t.item, { x: 512, y: 200 });
       s = await waitFor((s) => s.itemOut && !s.busy, 'loot floats back');
@@ -171,20 +191,34 @@ for (let cycle = 0; cycle < 2; cycle++) {
   await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-celebrate.png` });
   await sleep(7200);
   await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-car.png` });
-  const s = await waitFor((s) => s.phase === 'hiding' && s.cycle === cycle + 1, 'loop restart', 30000);
-  check(s.jailed === 0 && s.stickers === cycle + 1, `loop restarted: cycle=${s.cycle}, time=${s.time}, stickers=${s.stickers}`);
+  if (cycle === 0) {
+    const s = await waitFor((s) => s.phase === 'hiding' && s.cycle === 1, 'loop restart', 30000);
+    check(s.jailed === 0 && s.stickers === 1, `loop restarted: cycle=${s.cycle}, time=${s.time}, stickers=${s.stickers}`);
+    // Parent panel: hold the lock for 3 s.
+    await touch('touchStart', [{ x: 34, y: 34 }]);
+    await sleep(3300);
+    await touch('touchEnd', []);
+    const open = await page.evaluate(() => document.querySelector('.parent-panel')?.classList.contains('open'));
+    check(open, 'parent panel opens after a 3 s hold');
+    await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-parent.png` });
+    await tap({ x: 512, y: 100 });
+  } else {
+    const s = await waitFor((s) => s.phase === 'ended', 'session end', 30000);
+    await sleep(1800);
+    const shown = await page.evaluate(() => document.querySelectorAll('.end-screen .end-sticker').length);
+    check(s.stickers === 2 && shown === 2, `time up: the level finishes and the end screen shows ${shown} stickers`);
+    await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-end.png` });
+  }
 }
 
 check(sawRun, 'saw a rosvo run between hiding spots');
 
-// Parent panel: hold the lock for 3 s.
-await touch('touchStart', [{ x: 34, y: 34 }]);
-await sleep(3300);
+// Holding the corner button on the end screen starts a new session.
+await touch('touchStart', [{ x: 978, y: 722 }]);
+await sleep(3400);
 await touch('touchEnd', []);
-const open = await page.evaluate(() => document.querySelector('.parent-panel')?.classList.contains('open'));
-check(open, 'parent panel opens after a 3 s hold');
-await page.screenshot({ path: `${OUT}/${String(shot++).padStart(2, '0')}-parent.png` });
-await tap({ x: 512, y: 100 });
+await page.waitForFunction(() => window.__rosvo && window.__rosvo.state().phase === 'start', null, { timeout: 10000 });
+check(true, 'holding the end-screen button starts a new session');
 
 // Portrait shows the rotate picture.
 await page.setViewportSize({ width: 768, height: 1024 });

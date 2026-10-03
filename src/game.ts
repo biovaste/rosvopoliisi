@@ -10,6 +10,7 @@ import { fadeOutCrowd, handPos, ownerById, pickVictim, spawnCrowd, swapSomeone, 
 import { randomCostumes, rosvoHead, rosvoSvg, sackSvg, shuffle, type Costume } from './people';
 import { backToIdle, cuff, driveAway, escortIn, follow, intoCar, officer, outOfCar } from './police';
 import { Z, type Scene } from './scene';
+import { showEndScreen, timeIsUp } from './session';
 import { TIMES, setPhase, state, tier, type Owner } from './state';
 import { Sprite, ease, tween, wait } from './tween';
 
@@ -55,6 +56,7 @@ async function startCycle(): Promise<void> {
 
 export function begin(): void {
   state.cycle = 0;
+  state.startedAt = performance.now();
   state.lastInput = performance.now();
   void startCycle();
 }
@@ -518,6 +520,13 @@ async function celebrate(): Promise<void> {
   scene.car.classList.remove('flash');
   await outOfCar();
 
+  // The adult's chosen play time is up: finish here and show the stickers.
+  if (timeIsUp()) {
+    window.clearTimeout(townTimer);
+    showEndScreen(document.getElementById('app') as HTMLElement);
+    return;
+  }
+
   // Time moves on: day -> evening -> night -> day.
   state.cycle++;
   setTime(TIMES[state.cycle % TIMES.length]);
@@ -632,4 +641,24 @@ export function targets(): Record<string, Pt | null> {
     owner: o ? { x: o.pos.x, y: o.pos.y - 100 * depth(o.pos.y) } : null,
     officer: { x: officer.x, y: officer.y - 100 * officer.scale },
   };
+}
+
+// ---------- Shine ----------
+
+/**
+ * The lost loot gets a glow that grows the longer nobody touches the screen,
+ * before the hint hand appears at 10 s. Only transform and opacity change.
+ */
+export function updateShine(now: number): void {
+  const h = scene.halo;
+  const active = state.phase === 'returning' && !state.busy && !state.drag && state.stashSpot >= 0;
+  const k = active ? Math.max(0, Math.min(1, (now - state.lastInput - 1500) / 8500)) : 0;
+  if (k === 0) {
+    if (h.style.opacity !== '0') h.style.opacity = '0';
+    return;
+  }
+  const it = view(victim()).item;
+  const p = state.itemOut ? { x: it.x, y: it.y } : stashPoint();
+  h.style.opacity = (0.25 + 0.75 * k).toFixed(2);
+  h.style.transform = `translate3d(${(p.x - 120).toFixed(1)}px,${(p.y - 120).toFixed(1)}px,0) scale(${(0.45 + 0.75 * k).toFixed(3)})`;
 }

@@ -32,6 +32,8 @@ export interface Scene {
   fx: HTMLElement;
   shelf: HTMLElement;
   hand: Sprite;
+  /** Glow drawn over lost loot that grows while nobody touches the screen. */
+  halo: HTMLElement;
 }
 
 export const Z = { tint: 4000, shelf: 5000, fx: 6000, hand: 7000, drag: 3000, loot: 2900 };
@@ -182,8 +184,17 @@ export function buildScene(app: HTMLElement): Scene {
     const peeker = div('peeker', box);
     const inner = div('peeker-inner', peeker);
     const stash = div('stash', box);
-    const html = spotObject(def);
-    if (html) {
+    const html = def.art ? '' : spotObject(def);
+    if (def.art) {
+      const img = document.createElement('img');
+      img.className = `prop building spot-obj ${def.kind}`;
+      img.src = def.art.url;
+      img.width = def.art.w;
+      img.height = def.art.h;
+      img.alt = '';
+      stage.appendChild(img);
+      place(img, def.x - def.ax * def.w, def.top, def.z);
+    } else if (html) {
       const obj = place(div(`prop spot-obj ${def.kind}`, stage, html), def.x - def.w / 2, def.top, def.z);
       if (def.os !== 1) {
         obj.style.transformOrigin = '0 0';
@@ -209,6 +220,9 @@ export function buildScene(app: HTMLElement): Scene {
     <rect x="0" y="110" width="250" height="10" rx="4" fill="#a1887f" stroke="#3a2c2a" stroke-width="3"/>
     <path d="M20 64 L30 76 M230 64 L220 76 M20 120 L30 132 M230 120 L220 132" stroke="#6d4c41" stroke-width="4"/></svg>`;
 
+  const halo = div('loot-halo', stage, '<div class="halo-glow"></div><div class="halo-rays"></div>');
+  halo.style.zIndex = String(Z.loot - 1);
+
   const fx = div('fx', stage);
   fx.style.zIndex = String(Z.fx);
 
@@ -216,7 +230,7 @@ export function buildScene(app: HTMLElement): Scene {
   handEl.style.zIndex = String(Z.hand);
   const hand = new Sprite(handEl, 40, 4);
 
-  return { root, stage, spots, windows, car, carSprite, fx, shelf, hand };
+  return { root, stage, spots, windows, car, carSprite, fx, shelf, hand, halo };
 }
 
 /** Scales the stage to fit the window and returns the transform. */

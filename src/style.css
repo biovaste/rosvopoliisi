@@ -1165,3 +1165,121 @@ body[data-time='night'] .bird {
 .art-night > .sky.night {
   background: #021548;
 }
+
+/* ---------- Growing shine on lost loot ---------- */
+
+.loot-halo {
+  pointer-events: none;
+  opacity: 0;
+  width: 240px;
+  height: 240px;
+}
+.loot-halo > div {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+.halo-glow {
+  background: radial-gradient(circle, rgba(255, 246, 170, 0.95) 0%, rgba(255, 236, 140, 0.5) 35%, rgba(255, 236, 140, 0) 68%);
+}
+.halo-rays {
+  background: repeating-conic-gradient(rgba(255, 241, 150, 0.6) 0 8deg, rgba(255, 241, 150, 0) 8deg 30deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 66%);
+  mask: radial-gradient(circle, #000 18%, transparent 66%);
+  animation: spin 9s linear infinite;
+}
+
+/* ---------- Session length and end screen ---------- */
+
+.session-btn {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.session-btn.holding .parent-fill {
+  transform: scale(1);
+  transition: transform 2s linear;
+}
+.session-icon {
+  position: relative;
+  display: flex;
+}
+.session-picker {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: rgba(20, 30, 70, 0.6);
+}
+.session-picker.open {
+  display: flex;
+}
+.session-choice {
+  width: 104px;
+  height: 104px;
+  border-radius: 26px;
+  border: 5px solid #3a2c2a;
+  background: #3d7be0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.session-choice.on {
+  background: #ffd54f;
+  transform: scale(1.1);
+}
+.end-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: radial-gradient(circle at 50% 40%, #7ec8f0 0%, #3d7be0 100%);
+  animation: fadein 0.8s ease-out;
+}
+.end-hat {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.end-stickers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+  max-width: 80vw;
+}
+.end-sticker {
+  opacity: 0;
+  transform: scale(0.2);
+  animation: stickerpop 0.45s cubic-bezier(0.3, 1.6, 0.6, 1) forwards;
+}
+.end-sticker svg {
+  width: 110px;
+  height: 110px;
+}
+.end-restart {
+  position: absolute;
+}
+.end-restart.holding .parent-fill {
+  transform: scale(1);
+  transition: transform 3s linear;
+}
+@keyframes stickerpop {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

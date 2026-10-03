@@ -36,7 +36,18 @@ BUILDINGS = {
 }
 
 
-def cut_out(path, erase, seeds):
+# Hiding-spot props: width in logical px. `pockets` removes white areas enclosed by
+# the drawing (e.g. between ladder rungs), which a border flood fill cannot reach.
+PROPS = {
+    'tree-apple': {'w': 260, 'pockets': False},
+    'tree-autumn': {'w': 260, 'pockets': False},
+    'bush': {'w': 200, 'pockets': False},
+    'crates': {'w': 160, 'pockets': False},
+    'slide': {'w': 220, 'pockets': True},
+}
+
+
+def cut_out(path, erase, seeds, pockets=False):
     im = Image.open(path).convert('RGB')
     draw = ImageDraw.Draw(im)
     for box in erase:
@@ -44,10 +55,12 @@ def cut_out(path, erase, seeds):
     w, h = im.size
     border = [(x, 0) for x in range(0, w, 40)] + [(x, h - 1) for x in range(0, w, 40)]
     border += [(0, y) for y in range(0, h, 40)] + [(w - 1, y) for y in range(0, h, 40)]
+    if pockets:
+        seeds = list(seeds) + [(x, y) for y in range(0, h, 24) for x in range(0, w, 24)]
     for p in border + list(seeds):
         r, g, b = im.getpixel(p)
-        if min(r, g, b) > 225:
-            ImageDraw.floodfill(im, p, MAGENTA, thresh=40)
+        if min(r, g, b) > (240 if pockets else 225) and (r, g, b) != MAGENTA:
+            ImageDraw.floodfill(im, p, MAGENTA, thresh=30 if pockets else 40)
     a = np.asarray(im).copy()
     bg = (a[:, :, 0] == 255) & (a[:, :, 1] == 0) & (a[:, :, 2] == 255)
     alpha = Image.fromarray(np.where(bg, 0, 255).astype(np.uint8))
@@ -97,6 +110,17 @@ def station_cells(bbox, k):
     return cells
 
 
+def prop(name, cfg, meta):
+    path = os.path.join(SRC, f'{name}.jpg')
+    if not os.path.exists(path):
+        return
+    img, _ = cut_out(path, [], [], cfg['pockets'])
+    lw = cfg['w']
+    lh = round(img.height * lw / img.width)
+    img.resize((lw * SCALE, lh * SCALE), Image.LANCZOS).save(os.path.join(OUT, f'{name}.webp'), quality=88, method=6)
+    meta['props'][name] = {'w': lw, 'h': lh}
+
+
 def tile(name, src, quadrant, size, mirror_v=False):
     im = Image.open(os.path.join(SRC, src)).convert('RGB')
     if quadrant:
@@ -124,9 +148,11 @@ def sky(name, meta):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    meta = {'buildings': {}, 'tiles': {}, 'skies': {}}
+    meta = {'buildings': {}, 'tiles': {}, 'skies': {}, 'props': {}}
     for name, cfg in BUILDINGS.items():
         building(name, cfg, meta)
+    for name, cfg in PROPS.items():
+        prop(name, cfg, meta)
     meta['tiles']['grass'] = tile('tile-grass', 'tile-grass.jpg', True, (220, 220))
     meta['tiles']['sand'] = tile('tile-sand', 'tile-sand.jpg', True, (240, 240))
     meta['tiles']['sidewalk'] = tile('tile-sidewalk', 'tile-sidewalk.jpg', False, (120, 240), mirror_v=True)
