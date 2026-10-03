@@ -23,14 +23,28 @@ export const ownerById = (id: number): Owner | undefined => state.owners.find((o
 
 /** Where an owner holds their item. */
 export function handPos(o: Owner): Pt {
-  return { x: o.pos.x, y: o.pos.y - (sits(o) ? 50 : 62) * depth(o.pos.y) * o.size };
+  const lift = (lifts.get(o.id) ?? 0) * depth(o.pos.y) * o.size;
+  return { x: o.pos.x, y: o.pos.y - 62 * depth(o.pos.y) * o.size - lift };
 }
 
-/** People (not pets) standing at the bench sit down on it. */
-const sits = (o: Owner): boolean => !o.walking && o.role !== 'dog' && o.role !== 'cat' && onBench(o.pos);
+/** How far above the feet point the bench seat is (px). */
+const SEAT_H = 44;
+/** How far a sitting person is lifted (figure units), by owner id. */
+const lifts = new Map<number, number>();
 
+/**
+ * People (not pets) who stop at the bench sit on it: the whole figure is lifted
+ * so the hips rest on the seat, and short legs (children) dangle.
+ */
 function syncSeat(o: Owner): void {
-  view(o).sprite.el.classList.toggle('sitting', sits(o));
+  const el = view(o).sprite.el;
+  const hip = Number(el.querySelector<SVGElement>('svg[data-hip]')?.dataset.hip);
+  const sit = !o.walking && !!hip && onBench(o.pos);
+  const lift = sit ? Math.max(0, SEAT_H / (depth(o.pos.y) * o.size) - (196 - hip)) : 0;
+  lifts.set(o.id, lift);
+  el.classList.toggle('sitting', sit);
+  el.style.setProperty('--lift', `${lift.toFixed(1)}px`);
+  el.style.setProperty('--hip', `${hip || 150}px`);
 }
 
 function freePoints(): Pt[] {
@@ -55,10 +69,10 @@ function create(role: Role, look: Owner['look'], pos: Pt): Owner {
   bubble.innerHTML = `<div class="bubble-inner">${itemSvg(o.item)}</div>`;
   sprite.el.appendChild(bubble);
   stand(sprite, pos, size);
-  sprite.el.classList.toggle('sitting', role !== 'dog' && role !== 'cat' && onBench(pos));
   const item = makeActor('item', `<div class="actor-inner">${itemSvg(o.item)}</div>`, 50, 50);
   views.set(o.id, { sprite, bubble, item });
   state.owners.push(o);
+  syncSeat(o);
   syncItem(o);
   return o;
 }
@@ -68,6 +82,7 @@ function remove(o: Owner): void {
   v.sprite.el.remove();
   v.item.el.remove();
   views.delete(o.id);
+  lifts.delete(o.id);
   state.owners = state.owners.filter((x) => x !== o);
 }
 

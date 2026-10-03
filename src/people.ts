@@ -126,7 +126,7 @@ function armsDown(p: Pen, k: number, sleeve: string, skin: string, stripe?: stri
 
 /** A figure in a 120x200 box: shadow and legs stay on the ground, everything else rises by `t`. */
 function figure(p: Pen, k: number, t: number, legsSvg: string, upper: string, cls = ''): string {
-  return `<svg viewBox="0 0 120 200" width="120" height="200"${cls ? ` class="${cls}"` : ''}>${p.flush()}
+  return `<svg viewBox="0 0 120 200" width="120" height="200" data-hip="${154 - t}"${cls ? ` class="${cls}"` : ''}>${p.flush()}
     ${groundShadow(k)}${legsSvg}
     <g class="upper"><g transform="translate(0 ${-t})">${upper}</g></g>
   </svg>`;

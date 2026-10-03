@@ -170,19 +170,36 @@ function mailboxX(): number {
   return ok.length ? ok[Math.floor(Math.random() * ok.length)] : SLOT_CX[0] - 62;
 }
 
+const MAILBOX_X = mailboxX();
+/** Centre x of the small tree on the lawn (its crown hides anyone standing behind it). */
+const NEAR_TREE_X = 742;
+
+/** Two places on the back sidewalk, clear of lamps, the mailbox, doors and the small tree's crown. */
+function backPoints(): Pt[] {
+  const avoid = [...LAMPS.map((x) => [x, 60]), [MAILBOX_X, 60], ...town.buildings.map((b) => [doorOf(b.kind).x, 70])];
+  const ok: number[] = [];
+  for (let x = 400; x <= 1140; x += 20) {
+    if (Math.abs(x - NEAR_TREE_X) < 115) continue;
+    if (avoid.every(([a, r]) => Math.abs(x - a) >= r)) ok.push(x);
+  }
+  const out: number[] = [];
+  for (const x of ok.sort(() => Math.random() - 0.5)) if (out.length < 2 && out.every((o) => Math.abs(o - x) >= 140)) out.push(x);
+  return out.map((x) => ({ x, y: 500 }));
+}
+
 export const SPOTS: SpotDef[] = [
   ...chimneySpots(),
   backTree,
   roof,
-  withArt(spot('mailbox', 'stash', mailboxX(), 500, 60, 90, 22), 'mailbox', 0.12),
+  withArt(spot('mailbox', 'stash', MAILBOX_X, 500, 60, 90, 22), 'mailbox', 0.12),
   // Playground: the slide in front, the tunnel at the back of the sandpit.
   withArt(spot('slide', 'rosvo', 92, 776, 220, 170, 40), 'slide', 0.3, 0.3, 0.9),
   withArt(spot('tunnel', 'both', 386, 708, 170, 96, 30), 'tunnel', 0.12, 0.5, 0.83),
   // Lawn: bush in front, the small tree further back.
   withArt(spot('bush', 'both', 588, 795, 200, 120, 50), 'bush', 0.4, 0.5, 0.85),
   propArt('tree-birch')
-    ? withArt(spot('tree', 'both', 742, 712, 150, 225, 38, 712, 0.75), 'tree-birch', 0.08)
-    : withArt(spot('tree', 'both', 742, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
+    ? withArt(spot('tree', 'both', NEAR_TREE_X, 712, 150, 225, 38, 712, 0.75), 'tree-birch', 0.08)
+    : withArt(spot('tree', 'both', NEAR_TREE_X, 712, 150, 225, 38, 712, 0.75), `tree-${town.nearTree}`, 0.1, 0.5, 0.73),
   // Market square: small things on the cobbles (planter, crates, sacks, barrels).
   withArt(spot('planter', 'stash', 852, 795, 120, 76, 26), 'planter', 0.3),
   withArt(spot('crates', 'both', 962, 735, 160, 140, 30, 735), 'crates', 0.07),
@@ -211,13 +228,12 @@ export function spotRect(s: SpotDef): { x0: number; y0: number; x1: number; y1: 
 /** Places a townsperson without a home building may stand (feet). */
 export const FREE_POINTS: Pt[] = [
   { x: 450, y: 604 },
-  { x: 560, y: 606 },
-  { x: 770, y: 604 },
+  { x: 1110, y: 604 },
   { x: 1000, y: 606 },
   { x: 424, y: 774 },
   { x: 700, y: 770 },
-  { x: 800, y: 700 },
-  { x: 690, y: 500 },
+  { x: 812, y: 724 },
+  ...backPoints(),
   { x: 1162, y: 782 },
 ];
 

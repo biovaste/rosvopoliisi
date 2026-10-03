@@ -326,18 +326,24 @@ body[data-time='night'] .lamp .glow {
   transform-box: fill-box;
   transform-origin: 50% 0;
 }
-/* Sitting on the bench: the body drops onto the seat and the legs fold under it. */
+/* Sitting on the bench: the figure is lifted onto the seat (--lift is set per person). */
 .owner .upper,
 .owner .legs {
-  transform-box: view-box;
-  transform-origin: 60px 196px;
   transition: transform 0.25s ease-out;
 }
 .owner.sitting .upper {
-  transform: translateY(14px);
+  transform: translateY(calc(var(--lift, 0px) * -1));
+}
+/* Bent knees seen from the front: shorter legs, feet off the ground. */
+.owner .legs {
+  transform-box: view-box;
+  transform-origin: 60px var(--hip, 150px);
 }
 .owner.sitting .legs {
-  transform: scaleY(0.66);
+  transform: translateY(calc(var(--lift, 0px) * -1)) scaleY(0.68);
+}
+.owner.sitting .bubble {
+  margin-top: calc(var(--lift, 0px) * -1);
 }
 .walking .leg.l {
   animation: step 0.32s ease-in-out infinite alternate;
