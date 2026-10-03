@@ -1,14 +1,17 @@
-// People drawn in SVG: rosvot, townspeople and the police driver.
-// Looks (skin tone, hair, gender) are chosen independently and uniformly for
-// everyone, so no look is tied to being a rosvo, a townsperson or the police.
+// People drawn in SVG: rosvot, townspeople, the dog and the police officer.
+// Looks (skin tone, hair, gender, body shape) are chosen independently and
+// uniformly for everyone, so no look is tied to being a rosvo, a townsperson
+// or the police. Everyone is built from the same parts (head, hair, limbs,
+// hands, body, legs) in one soft "storybook" style.
 
 import { OUT, cuffsSvg, type ItemKind } from './art';
-import { tone } from './draw';
+import { tone, uid } from './draw';
 import type { BuildingKind } from './buildings';
 
 export const SKINS = ['#fde3cf', '#f2c4a0', '#dba67c', '#b87a4e', '#8c5636', '#5f3b26'];
 const HAIR_COLORS = ['#1f1612', '#3b2417', '#6b3f1f', '#a9622a', '#d9a64a', '#8a8a8a'];
 const BLUSH = '#f08a8a';
+const SW = 3.5;
 
 export type HairStyle = 'short' | 'spiky' | 'curly' | 'bald' | 'ponytail' | 'long' | 'buns' | 'bob' | 'braids';
 const FEMALE_HAIR: HairStyle[] = ['ponytail', 'long', 'buns', 'bob', 'curly', 'braids'];
@@ -22,6 +25,8 @@ export interface Look {
   mustache: boolean;
   /** Body width tweak (-4 slim .. +8 round). */
   build: number;
+  /** Body height tweak (-8 short .. +8 tall). */
+  height: number;
 }
 
 export const pick = <T,>(a: readonly T[]): T => a[Math.floor(Math.random() * a.length)];
@@ -43,6 +48,7 @@ export function randomLook(skin = pick(SKINS), female = Math.random() < 0.5): Lo
     hairColor: pick(HAIR_COLORS.slice(0, 5)),
     mustache: !female && Math.random() < 0.35,
     build: Math.round(Math.random() * 12 - 4),
+    height: Math.round(Math.random() * 16 - 8),
   };
 }
 
@@ -53,53 +59,135 @@ export function randomLooks(n: number): Look[] {
   return Array.from({ length: n }, (_, i) => randomLook(skins[i % skins.length], genders[i % genders.length]));
 }
 
+// ---------- Drawing parts ----------
+
+/** Collects gradient defs for one drawing and holds the shared part drawers. */
+class Pen {
+  private defs: string[] = [];
+
+  /** A soft top-lit gradient fill for a base colour. */
+  fill(base: string): string {
+    const id = uid('pg');
+    this.defs.push(
+      `<linearGradient id="${id}" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="${tone(base, 0.16)}"/><stop offset="1" stop-color="${tone(base, -0.12)}"/></linearGradient>`,
+    );
+    return `url(#${id})`;
+  }
+  /** The defs collected so far, emptied, ready to put in front of the drawing. */
+  flush(): string {
+    const d = this.defs.length ? `<defs>${this.defs.join('')}</defs>` : '';
+    this.defs = [];
+    return d;
+  }
+}
+
+const out = (k = 1) => `stroke="${OUT}" stroke-width="${(SW * k).toFixed(1)}" stroke-linejoin="round"`;
+const shade = (d: string, a = 0.1) => `<path d="${d}" fill="#000" opacity="${a}"/>`;
+const shine = (d: string, w = 3) =>
+  `<path d="${d}" fill="none" stroke="#fff" stroke-width="${w}" stroke-linecap="round" opacity=".45"/>`;
+const blinkDelay = () => `style="animation-delay:${(Math.random() * 4).toFixed(2)}s"`;
+
+/** A bendy arm: an outlined round-capped stroke, optionally striped. */
+function limb(d: string, color: string, stripe?: string): string {
+  let r = `<path d="${d}" fill="none" stroke="${OUT}" stroke-width="${10 + SW * 2}" stroke-linecap="round"/>
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round"/>`;
+  if (stripe) r += `<path d="${d}" fill="none" stroke="${stripe}" stroke-width="10" stroke-dasharray="5 7" stroke-dashoffset="-4"/>`;
+  return r;
+}
+
+/** Mitten hand with a thumb at (x+tx, y+ty). */
+function hand(p: Pen, x: number, y: number, tx: number, ty: number, skin: string): string {
+  return `<ellipse cx="${x + tx}" cy="${y + ty}" rx="3.8" ry="4.6" fill="${skin}" ${out(0.75)}/>
+    <ellipse cx="${x}" cy="${y}" rx="8" ry="8.5" fill="${p.fill(skin)}" ${out(0.85)}/>`;
+}
+
+/** Body outline with sloped shoulders. `k` widens it, a round body gets a belly. */
+function torsoPath(k: number): string {
+  const L = (x: number) => x - k;
+  const R = (x: number) => x + k;
+  const b = Math.max(0, k - 2) * 0.6;
+  return `M${L(46)} 95 Q60 91 ${R(74)} 95 Q${R(87)} 97 ${R(91)} 107 Q${R(93)} 114 ${R(92)} 124 L${R(93 + b)} 150 Q${R(93)} 166 60 166 Q${L(27)} 166 ${L(27 - b)} 150 L${L(28)} 124 Q${L(27)} 114 ${L(29)} 107 Q${L(33)} 97 ${L(46)} 95Z`;
+}
+
+/** Body filled with `color` plus an optional pattern clipped to it, soft side shading and a rim light. */
+function torso(p: Pen, k: number, color: string, pattern = ''): string {
+  const d = torsoPath(k);
+  const id = uid('tc');
+  const R = (x: number) => x + k;
+  return `<clipPath id="${id}"><path d="${d}"/></clipPath>
+    <path d="${d}" fill="${p.fill(color)}"/>
+    <g clip-path="url(#${id})">${pattern}
+      <path d="M${R(70)} 92 Q${R(98)} 116 ${R(86)} 170 H120 V88Z" fill="#000" opacity=".06"/>
+      <path d="M${R(76)} 92 Q${R(100)} 118 ${R(90)} 170 H120 V88Z" fill="#000" opacity=".07"/>
+      <path d="M0 156 Q60 166 120 156 V172 H0Z" fill="#000" opacity=".08"/>
+    </g>
+    <path d="${d}" fill="none" ${out()}/>
+    ${shine(`M${29 - k} 113 Q${29 - k} 103 ${40 - k} 98`)}
+    <path d="M49 95 Q60 102 71 95" fill="none" stroke="${OUT}" stroke-width="2.5" stroke-linecap="round" opacity=".45"/>`;
+}
+
+/** Two legs (`.leg.l` / `.leg.r`, hinged at the top) with shoes, from y=top down to the feet. */
+function legs(p: Pen, k: number, top: number, color: string, shoe = '#2a2230'): string {
+  const lx = -k * 0.4;
+  const leg = (x: number, s: number) =>
+    `M${x + lx * s} ${top} H${x + 14 + lx * s} L${x + 13} 184 Q${x + 7} 187 ${x + 1} 184Z`;
+  return `<g class="legs">
+    <g class="leg l"><path d="${leg(41, 1)}" fill="${p.fill(color)}" ${out(0.85)}/>
+      <path d="M33 192 Q32 181 44 181 H52 Q57 181 57 188 Q57 196 50 196 H37 Q33 196 33 192Z" fill="${shoe}" ${out(0.85)}/>
+      ${shine('M37 186 Q40 183.5 46 183.5', 2)}</g>
+    <g class="leg r"><path d="${leg(65, -1)}" fill="${p.fill(color)}" ${out(0.85)}/>
+      <path d="M87 192 Q88 181 76 181 H68 Q63 181 63 188 Q63 196 70 196 H83 Q87 196 87 192Z" fill="${shoe}" ${out(0.85)}/>
+      ${shine('M74 183.5 Q80 183.5 83 186', 2)}</g>
+  </g>`;
+}
+
+const groundShadow = (k: number) => `<ellipse class="shadow" cx="60" cy="194" rx="${42 + k}" ry="8" fill="#000" opacity=".15"/>`;
+
+/** Arms hanging at the sides, in front of the body. */
+function armsDown(p: Pen, k: number, sleeve: string, skin: string, stripe?: string): string {
+  return `${limb(`M${36 - k} 104 Q${27 - k} 120 ${29 - k} 139`, sleeve, stripe)}${hand(p, 29 - k, 146, 7, -3, skin)}
+    ${limb(`M${84 + k} 104 Q${93 + k} 120 ${91 + k} 139`, sleeve, stripe)}${hand(p, 91 + k, 146, -7, -3, skin)}`;
+}
+
+/** A figure in a 120x200 box: shadow and legs stay on the ground, everything else rises by `t`. */
+function figure(p: Pen, k: number, t: number, legsSvg: string, upper: string, cls = ''): string {
+  return `<svg viewBox="0 0 120 200" width="120" height="200"${cls ? ` class="${cls}"` : ''}>${p.flush()}
+    ${groundShadow(k)}${legsSvg}
+    <g transform="translate(0 ${-t})">${upper}</g>
+  </svg>`;
+}
+
 // ---------- Heads (head centre 60,58 in a 120-wide box) ----------
 
-function hairBack(l: Look): string {
+function hairBack(p: Pen, l: Look): string {
   const c = l.hairColor;
-  const s = `fill="${c}" stroke="${OUT}" stroke-width="4"`;
+  const s = `fill="${p.fill(c)}" ${out()}`;
   switch (l.hair) {
     case 'long':
-      return `<path d="M26 60 Q18 18 60 20 Q102 18 94 60 L100 104 Q60 114 20 104Z" ${s}/>`;
+      return `<path d="M26 60 Q18 18 60 20 Q102 18 94 60 Q97 78 101 90 Q94 98 86 92 L34 92 Q26 98 19 90 Q23 78 26 60Z" ${s}/>
+        <path d="M28 70 Q26 80 25 88 M92 70 Q94 80 95 88" fill="none" stroke="${tone(c, -0.3)}" stroke-width="2.5" stroke-linecap="round"/>`;
     case 'ponytail':
       return `<path d="M90 44 Q118 50 110 96 Q100 74 88 66Z" ${s}/>`;
     case 'buns':
       return `<circle cx="30" cy="30" r="14" ${s}/><circle cx="90" cy="30" r="14" ${s}/>`;
     case 'bob':
       return `<path d="M22 80 Q14 18 60 18 Q106 18 98 80 Q88 86 84 76 L36 76 Q32 86 22 80Z" ${s}/>`;
-    case 'curly':
-      return `<g ${s}>${[
-        [30, 40],
-        [40, 24],
-        [60, 18],
-        [80, 24],
-        [90, 40],
-        [94, 58],
-        [26, 58],
-      ]
-        .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="17"/>`)
-        .join('')}</g><g fill="${c}">${[
-        [30, 40],
-        [40, 24],
-        [60, 18],
-        [80, 24],
-        [90, 40],
-        [94, 58],
-        [26, 58],
-      ]
-        .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="15"/>`)
-        .join('')}</g>`;
+    case 'curly': {
+      const pts = [[30, 40], [40, 24], [60, 18], [80, 24], [90, 40], [94, 58], [26, 58]];
+      return `<g fill="${c}" ${out()}>${pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="16"/>`).join('')}</g>
+        <g fill="${c}">${pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${16 - SW / 2}"/>`).join('')}</g>`;
+    }
     case 'braids':
-      return `<path d="M30 60 Q24 84 30 104 M90 60 Q96 84 90 104" stroke="${OUT}" stroke-width="13" stroke-linecap="round" fill="none"/>
+      return `<path d="M30 60 Q24 84 30 104 M90 60 Q96 84 90 104" stroke="${OUT}" stroke-width="${7 + SW * 2}" stroke-linecap="round" fill="none"/>
         <path d="M30 60 Q24 84 30 104 M90 60 Q96 84 90 104" stroke="${c}" stroke-width="7" stroke-linecap="round" stroke-dasharray="7 3" fill="none"/>`;
     default:
       return '';
   }
 }
 
-function hairFront(l: Look): string {
-  const c = l.hairColor;
-  const s = `fill="${c}" stroke="${OUT}" stroke-width="3.5" stroke-linejoin="round"`;
+function hairFront(p: Pen, l: Look): string {
+  const s = `fill="${p.fill(l.hairColor)}" ${out()}`;
+  const sh = shine('M40 34 Q48 29 56 29', 2.5);
   switch (l.hair) {
     case 'bald':
       return '';
@@ -108,29 +196,51 @@ function hairFront(l: Look): string {
     case 'curly':
       return `<path d="M28 50 Q30 26 60 26 Q90 26 92 50 Q86 40 78 44 Q72 36 64 42 Q58 34 50 42 Q42 36 36 46 Q32 42 28 50Z" ${s}/>`;
     case 'short':
-      return `<path d="M28 52 Q30 22 60 24 Q90 22 92 52 Q80 36 60 40 Q40 36 28 52Z" ${s}/>`;
+      return `<path d="M28 52 Q30 22 60 24 Q90 22 92 52 Q80 36 60 40 Q40 36 28 52Z" ${s}/>${sh}`;
     case 'bob':
-      return `<path d="M28 56 Q28 24 60 24 Q92 24 92 56 Q78 38 60 44 L56 36 Q44 42 28 56Z" ${s}/>`;
+      return `<path d="M28 56 Q28 24 60 24 Q92 24 92 56 Q78 38 60 44 L56 36 Q44 42 28 56Z" ${s}/>${sh}`;
     default:
-      return `<path d="M28 54 Q30 24 60 24 Q90 24 92 54 Q84 36 66 40 Q62 34 58 40 Q40 36 28 54Z" ${s}/>`;
+      return `<path d="M28 54 Q30 24 60 24 Q90 24 92 54 Q84 36 66 40 Q62 34 58 40 Q40 36 28 54Z" ${s}/>${sh}`;
   }
 }
 
-/** Skull, ears and hair. Face features are layered on top by the caller. */
-function headBase(l: Look, faceInner: string, hatSvg = ''): string {
-  return `${hairBack(l)}
-    <circle cx="28" cy="60" r="7" fill="${l.skin}" stroke="${OUT}" stroke-width="4"/>
-    <circle cx="92" cy="60" r="7" fill="${l.skin}" stroke="${OUT}" stroke-width="4"/>
-    <rect x="52" y="80" width="16" height="16" rx="5" fill="${l.skin}" stroke="${OUT}" stroke-width="3"/>
-    <ellipse cx="60" cy="58" rx="32" ry="30" fill="${l.skin}" stroke="${OUT}" stroke-width="4"/>
-    <path d="M86 52 Q90 76 70 86 Q84 70 86 52Z" fill="#000" opacity=".08"/>
-    <ellipse cx="44" cy="44" rx="9" ry="6" fill="#fff" opacity=".22" transform="rotate(-25 44 44)"/>
-    ${hairFront(l)}
-    ${faceInner}
-    ${hatSvg}`;
+/** Gold hoop earrings, shown for female looks. */
+const earrings = (l: Look) =>
+  l.female
+    ? [25, 95]
+        .map(
+          (x) =>
+            `<circle cx="${x}" cy="73" r="3.6" fill="none" stroke="${OUT}" stroke-width="5"/><circle cx="${x}" cy="73" r="3.6" fill="none" stroke="#f2c14e" stroke-width="2.4"/>`,
+        )
+        .join('')
+    : '';
+
+/** Skull, ears, neck and hair. Face features are layered on top by the caller. */
+function headBase(p: Pen, l: Look, face: string, hat = ''): string {
+  const skin = l.skin;
+  const inner = tone(skin, -0.28);
+  return `${hairBack(p, l)}
+    <ellipse cx="26" cy="61" rx="7" ry="8" fill="${skin}" ${out()}/><path d="M25 57 q4 4 0 8" fill="none" stroke="${inner}" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="94" cy="61" rx="7" ry="8" fill="${skin}" ${out()}/><path d="M95 57 q-4 4 0 8" fill="none" stroke="${inner}" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M52 80 H68 V95 Q60 99 52 95Z" fill="${skin}" ${out(0.85)}/>
+    <path d="M52 82 H68 V88 Q60 92 52 88Z" fill="${tone(skin, -0.22)}" opacity=".6"/>
+    <ellipse cx="60" cy="58" rx="34" ry="31" fill="${p.fill(skin)}" ${out()}/>
+    ${shade('M88 44 Q98 74 70 88 Q84 82 90 66 Q92 54 88 44Z')}
+    <ellipse cx="43" cy="42" rx="10" ry="6" fill="#fff" opacity=".28" transform="rotate(-25 43 42)"/>
+    ${hairFront(p, l)}
+    ${earrings(l)}
+    ${face}
+    ${hat}`;
 }
 
-const blinkDelay = () => `style="animation-delay:${(Math.random() * 4).toFixed(2)}s"`;
+/** Eyelashes at the outer top corner of eyes centred at xl and xr with radius r. */
+function lashes(l: Look, xl: number, xr: number, cy: number, r: number): string {
+  if (!l.female) return '';
+  const n = Math.max(4, r * 0.75);
+  const pair = (x: number, s: number) =>
+    `M${x - s * r * 0.85} ${cy - r * 0.4} l${-s * n * 0.7} ${-n * 0.75} M${x - s * r * 0.5} ${cy - r * 0.8} l${-s * n * 0.45} ${-n * 0.85}`;
+  return `<path d="${pair(xl, 1)} ${pair(xr, -1)}" stroke="${OUT}" stroke-width="${r > 6 ? 2.6 : 2}" stroke-linecap="round"/>`;
+}
 
 // ---------- Rosvo ----------
 
@@ -164,91 +274,114 @@ export function randomCostumes(n: number): Costume[] {
   }));
 }
 
-function rosvoHat(c: Costume): string {
-  const s = `fill="${c.hatColor}" stroke="${OUT}" stroke-width="4"`;
+function rosvoHat(p: Pen, c: Costume): string {
+  const base = c.hatColor;
+  const s = `fill="${p.fill(base)}" ${out()}`;
+  const rib = tone(base, -0.28);
   switch (c.hat) {
     case 'beanie':
-      return `<path d="M30 42 Q60 0 90 42 Z" ${s}/><rect x="27" y="36" width="66" height="12" rx="6" ${s}/>
-        <circle cx="60" cy="12" r="8" fill="#fff" stroke="${OUT}" stroke-width="4"/>`;
+      return `<path d="M28 42 Q30 8 60 8 Q90 8 92 42Z" ${s}/>
+        <path d="M45 13 Q42 26 42 38 M60 9 V38 M75 13 Q78 26 78 38" fill="none" stroke="${rib}" stroke-width="2" opacity=".7"/>
+        ${shine('M38 22 Q44 14 52 12')}
+        <rect x="25" y="35" width="70" height="13" rx="6.5" fill="${p.fill(tone(base, -0.08))}" ${out()}/>
+        <path d="M33 38 v7 M41 38 v7 M49 38 v7 M57 38 v7 M65 38 v7 M73 38 v7 M81 38 v7 M89 38 v6" stroke="${rib}" stroke-width="2"/>
+        <circle cx="60" cy="10" r="9" fill="#fff" ${out()}/><path d="M56 8 q2 -3 5 -2" fill="none" stroke="#cfd8dc" stroke-width="2"/>`;
     case 'bowler':
-      return `<ellipse cx="60" cy="40" rx="42" ry="8" ${s}/><path d="M34 40 Q34 8 60 8 Q86 8 86 40 Z" ${s}/>`;
+      return `<ellipse cx="60" cy="41" rx="42" ry="8" fill="${p.fill(tone(base, -0.1))}" ${out()}/>
+        <path d="M34 41 Q32 8 60 8 Q88 8 86 41Z" ${s}/>
+        <path d="M34.5 33 Q60 37 85.5 33 L86 40 Q60 44 34 40Z" fill="${tone(base, -0.4)}"/>
+        ${shine('M42 22 Q45 13 54 11')}`;
     case 'cap':
-      return `<path d="M30 40 Q32 12 60 12 Q88 12 90 40 Z" ${s}/><path d="M84 38 Q104 36 108 44 L86 44 Z" ${s}/>`;
+      return `<path d="M28 42 Q30 10 60 10 Q90 10 92 42Z" ${s}/>
+        <path d="M60 11 Q57 26 60 40" fill="none" stroke="${rib}" stroke-width="2"/>
+        <path d="M86 39 Q108 34 113 45 Q100 48 86 46Z" fill="${p.fill(tone(base, -0.12))}" ${out()}/>
+        <circle cx="60" cy="11" r="3.5" fill="${tone(base, -0.2)}" ${out(0.6)}/>
+        ${shine('M38 26 Q42 17 50 15')}`;
     default:
       return '';
   }
 }
 
-/** Rosvo head, viewBox 0 0 120 100. Shows sly or sorry face via CSS classes. */
-export function rosvoHead(c: Costume): string {
+function rosvoHeadParts(p: Pen, c: Costume): string {
   const l = c.look;
+  const m = c.mask;
   const face = `
-    <path d="M30 50 Q60 40 90 50 L88 62 Q74 66 62 58 Q60 56 58 58 Q46 66 32 62 Z" fill="${c.mask}"/>
+    <path d="M24 55 Q14 49 9 55 Q15 59 24 61Z" fill="${m}" ${out(0.75)}/>
+    <path d="M23 52 Q60 36 97 52 L95 64 Q80 72 64 63 Q60 60 56 63 Q40 72 25 64 Z" fill="${m}" ${out()}/>
+    ${shine('M31 50 Q44 43 56 44', 2.5)}
+    <path d="M58 65 q4 5 -1 8" fill="none" stroke="${tone(l.skin, -0.35)}" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="34" cy="74" rx="6" ry="3.5" fill="${BLUSH}" opacity=".45"/>
+    <ellipse cx="86" cy="74" rx="6" ry="3.5" fill="${BLUSH}" opacity=".45"/>
     <g class="eyes-sly"><g class="blink" ${blinkDelay()}>
-      <ellipse cx="46" cy="55" rx="7" ry="6" fill="#fff"/><ellipse cx="74" cy="55" rx="7" ry="6" fill="#fff"/>
-      <circle cx="49" cy="55" r="3.5" fill="${OUT}"/><circle cx="77" cy="55" r="3.5" fill="${OUT}"/></g>
-      <path d="M48 76 Q60 84 74 74" fill="none" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="45" cy="56" rx="9" ry="8.5" fill="#fff" ${out(0.7)}/><ellipse cx="75" cy="56" rx="9" ry="8.5" fill="#fff" ${out(0.7)}/>
+      <circle cx="48.5" cy="57.5" r="4.6" fill="${OUT}"/><circle cx="78.5" cy="57.5" r="4.6" fill="${OUT}"/>
+      <circle cx="50" cy="55.5" r="1.8" fill="#fff"/><circle cx="80" cy="55.5" r="1.8" fill="#fff"/>
+      <path d="M35 56 Q35 46 45 47 Q55 47 55 54 Q45 49.5 35 56Z" fill="${m}" ${out(0.6)}/>
+      <path d="M85 56 Q85 46 75 47 Q65 47 65 54 Q75 49.5 85 56Z" fill="${m}" ${out(0.6)}/></g>
+      <path d="M47 75 Q58 84 73 73" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M71 70 q4 1 3 5" fill="none" stroke="${OUT}" stroke-width="2.5" stroke-linecap="round"/>
     </g>
     <g class="eyes-sorry">
-      <ellipse cx="46" cy="56" rx="7" ry="7" fill="#fff"/><ellipse cx="74" cy="56" rx="7" ry="7" fill="#fff"/>
-      <circle cx="46" cy="58" r="3.5" fill="${OUT}"/><circle cx="74" cy="58" r="3.5" fill="${OUT}"/>
-      <path d="M38 44 L52 48 M82 44 L68 48" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M50 80 Q60 74 70 80" fill="none" stroke="${OUT}" stroke-width="4" stroke-linecap="round"/>
-      <ellipse cx="36" cy="70" rx="6" ry="3.5" fill="${BLUSH}" opacity=".8"/>
-      <ellipse cx="84" cy="70" rx="6" ry="3.5" fill="${BLUSH}" opacity=".8"/>
+      <ellipse cx="45" cy="57" rx="9" ry="9" fill="#fff" ${out(0.7)}/><ellipse cx="75" cy="57" rx="9" ry="9" fill="#fff" ${out(0.7)}/>
+      <circle cx="45" cy="60" r="5" fill="${OUT}"/><circle cx="75" cy="60" r="5" fill="${OUT}"/>
+      <circle cx="47" cy="57.5" r="2" fill="#fff"/><circle cx="77" cy="57.5" r="2" fill="#fff"/>
+      <circle cx="43.5" cy="62" r="1" fill="#fff"/><circle cx="73.5" cy="62" r="1" fill="#fff"/>
+      <path d="M35 59 Q34 47 47 47.5 Z" fill="${m}"/><path d="M85 59 Q86 47 73 47.5 Z" fill="${m}"/>
+      <path d="M49 81 Q54 76 60 80 Q66 76 71 81" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M32 67 q-4 8 0 10 q4 -2 0 -10" fill="#64b5f6" stroke="#3d8bd1" stroke-width="1"/>
+      <ellipse cx="34" cy="75" rx="6.5" ry="4" fill="${BLUSH}" opacity=".7"/>
+      <ellipse cx="86" cy="75" rx="6.5" ry="4" fill="${BLUSH}" opacity=".7"/>
     </g>
-    ${l.female ? `<path d="M38 49 l-4 -4 M40 47 l-2 -5 M80 49 l4 -4 M78 47 l2 -5" stroke="${OUT}" stroke-width="2.5" stroke-linecap="round"/>` : ''}
-    ${l.mustache ? `<path d="M46 72 Q53 66 60 71 Q67 66 74 72 Q67 76 60 73 Q53 76 46 72Z" fill="${l.hairColor}" stroke="${OUT}" stroke-width="1.5"/>` : ''}`;
-  return `<g class="head">${headBase(l, face, rosvoHat(c))}</g>`;
+    ${l.female ? `<path d="M35 55 Q44 47.5 54 52.5 M65 52.5 Q76 47.5 85 55" fill="none" stroke="${OUT}" stroke-width="3.2" stroke-linecap="round"/>${lashes(l, 45, 75, 56, 9)}` : ''}
+    ${l.mustache ? `<path d="M46 72 Q53 66 60 71 Q67 66 74 72 Q67 76 60 73 Q53 76 46 72Z" fill="${l.hairColor}" ${out(0.5)}/>` : ''}`;
+  return `<g class="head">${headBase(p, l, face, rosvoHat(p, c))}</g>`;
+}
+
+/** Rosvo head, viewBox 0 0 120 100. Shows sly or sorry face via CSS classes. */
+export function rosvoHead(c: Costume): string {
+  const p = new Pen();
+  const h = rosvoHeadParts(p, c);
+  return p.flush() + h;
 }
 
 /** Full-body rosvo. viewBox 0 0 120 200. */
 export function rosvoSvg(c: Costume): string {
-  const id = `b${Math.random().toString(36).slice(2, 8)}`;
-  const stripes = [0, 1, 2, 3].map((i) => `<rect x="30" y="${104 + i * 16}" width="60" height="8" fill="${c.stripe}"/>`).join('');
-  const skin = c.look.skin;
-  return `<svg viewBox="0 0 120 200" width="120" height="200" class="rosvo-svg">
-    <ellipse class="shadow" cx="60" cy="194" rx="42" ry="8" fill="#000" opacity=".15"/>
-    <g class="legs">
-      <rect class="leg l" x="40" y="160" width="14" height="30" rx="6" fill="#3d3d52" stroke="${OUT}" stroke-width="3"/>
-      <rect class="leg r" x="66" y="160" width="14" height="30" rx="6" fill="#3d3d52" stroke="${OUT}" stroke-width="3"/>
-      <ellipse cx="45" cy="192" rx="12" ry="6" fill="${OUT}"/><ellipse cx="75" cy="192" rx="12" ry="6" fill="${OUT}"/>
-    </g>
-    <g class="arms-down">
-      <rect x="18" y="104" width="14" height="44" rx="7" fill="#fff" stroke="${OUT}" stroke-width="3"/>
-      <rect x="88" y="104" width="14" height="44" rx="7" fill="#fff" stroke="${OUT}" stroke-width="3"/>
-      <circle cx="25" cy="150" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
-      <circle cx="95" cy="150" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
-    </g>
+  const p = new Pen();
+  const l = c.look;
+  const k = l.build;
+  const t = l.height;
+  const skin = l.skin;
+  const stripes = [0, 1, 2, 3]
+    .map((i) => {
+      const y = 110 + i * 15;
+      return `<path d="M0 ${y} Q60 ${y + 8} 120 ${y} V${y + 8} Q60 ${y + 16} 0 ${y + 8}Z" fill="${c.stripe}"/>`;
+    })
+    .join('');
+  const upper = `${torso(p, k, '#ffffff', stripes)}
+    <g class="arms-down">${armsDown(p, k, '#fff', skin, c.stripe)}</g>
     <g class="arms-up">
-      <rect x="14" y="62" width="14" height="46" rx="7" fill="#fff" stroke="${OUT}" stroke-width="3" transform="rotate(-12 21 108)"/>
-      <rect x="92" y="62" width="14" height="46" rx="7" fill="#fff" stroke="${OUT}" stroke-width="3" transform="rotate(12 99 108)"/>
-      <circle cx="13" cy="60" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
-      <circle cx="107" cy="60" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
+      ${limb(`M${36 - k} 104 Q${21 - k} 94 ${17 - k} 70`, '#fff', c.stripe)}${hand(p, 16 - k, 62, 7, 2, skin)}
+      ${limb(`M${84 + k} 104 Q${99 + k} 94 ${103 + k} 70`, '#fff', c.stripe)}${hand(p, 104 + k, 62, -7, 2, skin)}
     </g>
-    <rect x="28" y="96" width="64" height="70" rx="16" fill="#fff" stroke="${OUT}" stroke-width="4"/>
-    <clipPath id="${id}"><rect x="30" y="98" width="60" height="66" rx="14"/></clipPath>
-    <g clip-path="url(#${id})">${stripes}</g>
-    <path d="M70 100 Q92 112 88 160 L70 162 Q84 128 70 100Z" fill="#000" opacity=".12"/>
-    <path d="M34 108 Q38 100 48 99" stroke="#fff" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>
-    <path d="M30 140 Q60 150 90 140" fill="none" stroke="${OUT}" stroke-width="3" opacity=".25"/>
     <g class="arms-cuffed">
-      <rect x="22" y="104" width="13" height="36" rx="6.5" fill="#fff" stroke="${OUT}" stroke-width="3" transform="rotate(-38 28 106)"/>
-      <rect x="85" y="104" width="13" height="36" rx="6.5" fill="#fff" stroke="${OUT}" stroke-width="3" transform="rotate(38 92 106)"/>
-      <circle cx="50" cy="134" r="7.5" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
-      <circle cx="70" cy="134" r="7.5" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
+      ${limb(`M${36 - k} 105 Q${36 - k} 124 46 131`, '#fff', c.stripe)}${hand(p, 50, 134, 0, -6, skin)}
+      ${limb(`M${84 + k} 105 Q${84 + k} 124 74 131`, '#fff', c.stripe)}${hand(p, 70, 134, 0, -6, skin)}
       ${cuffsSvg()}
     </g>
-    <g transform="translate(0 6)">${rosvoHead(c)}</g>
-  </svg>`;
+    <g transform="translate(0 6)">${rosvoHeadParts(p, c)}</g>`;
+  return figure(p, k, t, legs(p, k, 154 - t, '#3d3d52'), upper, 'rosvo-svg');
 }
 
 export function sackSvg(c: Costume): string {
-  return `<svg viewBox="0 0 80 80" width="80" height="80">
-    <path d="M16 36 Q10 74 40 76 Q70 74 64 36 Q52 26 40 30 Q28 26 16 36Z" fill="${c.sack}" stroke="${OUT}" stroke-width="4"/>
-    <path d="M30 28 L40 16 L50 28" fill="${c.sack}" stroke="${OUT}" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M28 30 Q40 36 52 30" fill="none" stroke="${OUT}" stroke-width="4"/>
+  const p = new Pen();
+  const f = p.fill(c.sack);
+  return `<svg viewBox="0 0 80 80" width="80" height="80">${p.flush()}
+    <path d="M16 36 Q10 74 40 76 Q70 74 64 36 Q52 26 40 30 Q28 26 16 36Z" fill="${f}" ${out(1.15)}/>
+    ${shade('M50 34 Q66 44 62 64 Q56 74 44 75 Q60 62 50 34Z', 0.12)}
+    <path d="M30 28 L40 16 L50 28" fill="${f}" ${out(1.15)}/>
+    <path d="M28 30 Q40 36 52 30" fill="none" ${out(1.15)}/>
     <path d="M32 52 a8 8 0 1 0 16 0 a8 8 0 1 0 -16 0 M40 44 v16" fill="none" stroke="${OUT}" stroke-width="3" opacity=".5"/>
+    ${shine('M22 46 Q22 38 28 35')}
   </svg>`;
 }
 
@@ -279,76 +412,115 @@ export const ROLE_ITEM: Record<Role, ItemKind> = {
   gardener: 'watering',
 };
 
-function faces(cx: number, cy: number): string {
-  return `<g class="face-happy">
-      <path d="M${cx - 13} ${cy - 2} q4 -6 8 0 M${cx + 5} ${cy - 2} q4 -6 8 0" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M${cx - 12} ${cy + 8} Q${cx} ${cy + 22} ${cx + 12} ${cy + 8} Z" fill="#c2185b" stroke="${OUT}" stroke-width="3"/>
+/** Shiny oval eyes at (cx-9, cx+9): open (blinking), or a worried look. */
+function eyes(cx: number, cy: number, worried = false): string {
+  const dy = worried ? 1 : 0;
+  return [cx - 9, cx + 9]
+    .map(
+      (x) =>
+        `<ellipse cx="${x}" cy="${cy + dy}" rx="3.8" ry="4.8" fill="${OUT}"/><circle cx="${x + 1.3}" cy="${cy - 1.6 + dy}" r="1.5" fill="#fff"/>`,
+    )
+    .join('');
+}
+
+/** Calm, happy and sad faces; CSS shows one. The nose is shared. */
+function faces(cx: number, cy: number, skin?: string): string {
+  const nose = skin
+    ? `<path d="M${cx - 1} ${cy + 3} q4 4 -1 6" fill="none" stroke="${tone(skin, -0.35)}" stroke-width="2.5" stroke-linecap="round"/>`
+    : '';
+  return `${nose}<g class="face-happy">
+      <path d="M${cx - 13} ${cy - 1} q4 -6 8 0 M${cx + 5} ${cy - 1} q4 -6 8 0" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M${cx - 12} ${cy + 10} Q${cx} ${cy + 24} ${cx + 12} ${cy + 10} Z" fill="#c2185b" stroke="${OUT}" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M${cx - 5} ${cy + 17} Q${cx} ${cy + 13} ${cx + 5} ${cy + 17}" fill="#f48fb1"/>
     </g>
     <g class="face-calm">
-      <g class="blink" ${blinkDelay()}><circle cx="${cx - 9}" cy="${cy - 2}" r="3.5" fill="${OUT}"/><circle cx="${cx + 9}" cy="${cy - 2}" r="3.5" fill="${OUT}"/></g>
-      <path d="M${cx - 8} ${cy + 10} Q${cx} ${cy + 16} ${cx + 8} ${cy + 10}" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
+      <g class="blink" ${blinkDelay()}>${eyes(cx, cy - 1)}</g>
+      <path d="M${cx - 8} ${cy + 12} Q${cx} ${cy + 18} ${cx + 8} ${cy + 12}" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
     </g>
     <g class="face-sad">
-      <circle cx="${cx - 9}" cy="${cy - 1}" r="3.5" fill="${OUT}"/><circle cx="${cx + 9}" cy="${cy - 1}" r="3.5" fill="${OUT}"/>
-      <path d="M${cx - 16} ${cy - 7} L${cx - 6} ${cy - 11} M${cx + 16} ${cy - 7} L${cx + 6} ${cy - 11}" stroke="${OUT}" stroke-width="3" stroke-linecap="round"/>
-      <path d="M${cx - 8} ${cy + 14} Q${cx} ${cy + 7} ${cx + 8} ${cy + 14}" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M${cx - 12} ${cy + 3} q-3 7 0 9 q3 -2 0 -9" fill="#64b5f6"/>
+      ${eyes(cx, cy - 1, true)}
+      <path d="M${cx - 16} ${cy - 8} L${cx - 6} ${cy - 12} M${cx + 16} ${cy - 8} L${cx + 6} ${cy - 12}" stroke="${OUT}" stroke-width="3" stroke-linecap="round"/>
+      <path d="M${cx - 8} ${cy + 16} Q${cx} ${cy + 9} ${cx + 8} ${cy + 16}" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M${cx - 13} ${cy + 4} q-4 8 0 10 q4 -2 0 -10" fill="#64b5f6" stroke="#3d8bd1" stroke-width="1"/>
     </g>
-    <ellipse cx="${cx - 18}" cy="${cy + 8}" rx="5" ry="3" fill="${BLUSH}" opacity=".5"/>
-    <ellipse cx="${cx + 18}" cy="${cy + 8}" rx="5" ry="3" fill="${BLUSH}" opacity=".5"/>`;
+    <ellipse cx="${cx - 20}" cy="${cy + 10}" rx="6" ry="3.5" fill="${BLUSH}" opacity=".45"/>
+    <ellipse cx="${cx + 20}" cy="${cy + 10}" rx="6" ry="3.5" fill="${BLUSH}" opacity=".45"/>`;
 }
 
 interface Outfit {
   shirt: string;
   legs: string;
+  shoe?: string;
   hat?: string;
+  /** Drawn on the body. */
   extra?: string;
+  /** Drawn on the face (glasses). */
+  face?: string;
   /** Overrides for the look (e.g. grey hair for elders). */
   hairColor?: string;
+  /** Children are short and slim. */
+  child?: boolean;
 }
 
-function outfit(role: Role): Outfit {
+function outfit(p: Pen, role: Role): Outfit {
+  const s = (c: string, k = 1) => `fill="${p.fill(c)}" ${out(k)}`;
   switch (role) {
     case 'baker':
       return {
         shirt: '#ffffff',
         legs: '#5d6d7e',
-        hat: `<path d="M34 34 Q26 10 44 12 Q50 -2 64 8 Q80 0 84 14 Q98 14 88 34 Z" fill="#fff" stroke="${OUT}" stroke-width="4"/>
-          <rect x="34" y="28" width="52" height="10" fill="#fff" stroke="${OUT}" stroke-width="4"/>`,
-        extra: `<path d="M40 120 H80 V150 Q60 156 40 150Z" fill="#f5f5f5" stroke="${OUT}" stroke-width="3"/>`,
+        hat: `<path d="M34 34 Q24 10 44 12 Q50 -2 64 8 Q80 0 84 14 Q98 14 88 34 Z" ${s('#ffffff')}/>
+          <path d="M48 14 Q50 24 48 30 M66 10 Q68 22 66 30" fill="none" stroke="#cfd8dc" stroke-width="2.5" stroke-linecap="round"/>
+          <rect x="33" y="28" width="54" height="11" rx="3" ${s('#f5f5f5')}/>`,
+        extra: `<path d="M40 118 Q60 114 80 118 L82 152 Q60 160 38 152Z" ${s('#f5f5f5', 0.85)}/>
+          <path d="M48 128 H72" stroke="#cfd8dc" stroke-width="2.5" stroke-linecap="round"/>`,
       };
     case 'kid':
       return {
         shirt: '#43a047',
         legs: '#1e88e5',
-        hat: `<path d="M30 38 Q32 18 60 18 Q88 18 90 38Z" fill="#e53935" stroke="${OUT}" stroke-width="4"/><path d="M30 38 L8 40 L10 34 L30 32Z" fill="#e53935" stroke="${OUT}" stroke-width="3"/>`,
+        child: true,
+        hat: `<path d="M28 42 Q30 14 60 14 Q90 14 92 42Z" ${s('#e53935')}/>
+          <path d="M34 39 Q14 36 8 44 Q20 47 34 45Z" ${s('#c62828')}/>
+          ${shine('M40 28 Q44 20 52 18')}`,
       };
     case 'kid2':
-      return { shirt: '#f06292', legs: '#ffd54f' };
+      return {
+        shirt: '#f06292',
+        legs: '#ffd54f',
+        child: true,
+        extra: `<circle cx="60" cy="122" r="7" ${s('#fff59d', 0.7)}/><circle cx="60" cy="122" r="2.5" fill="#f9a825"/>`,
+      };
     case 'elder':
       return {
         shirt: '#9575cd',
         legs: '#7e57c2',
+        shoe: '#5d4037',
         hairColor: '#d9d9d9',
-        extra: `<circle cx="51" cy="58" r="10" fill="none" stroke="${OUT}" stroke-width="2.5"/><circle cx="69" cy="58" r="10" fill="none" stroke="${OUT}" stroke-width="2.5"/><path d="M61 58 h-2" stroke="${OUT}" stroke-width="2.5"/>`,
+        face: `<circle cx="51" cy="58" r="10" fill="#fff" fill-opacity=".15" stroke="${OUT}" stroke-width="2.5"/><circle cx="69" cy="58" r="10" fill="#fff" fill-opacity=".15" stroke="${OUT}" stroke-width="2.5"/><path d="M61 58 h-2 M41 56 L28 54 M79 56 L92 54" stroke="${OUT}" stroke-width="2.5"/>`,
+        extra: `${[0, 1, 2].map((i) => `<circle cx="60" cy="${110 + i * 14}" r="2.6" fill="#ede7f6" stroke="${OUT}" stroke-width="1.5"/>`).join('')}`,
       };
     case 'vendor':
       return {
         shirt: '#ffb74d',
         legs: '#455a64',
-        hat: `<path d="M30 36 Q32 14 60 14 Q88 14 90 36Z" fill="#fff" stroke="${OUT}" stroke-width="4"/><rect x="28" y="30" width="64" height="8" fill="#f06292" stroke="${OUT}" stroke-width="3"/>`,
+        hat: `<path d="M28 40 Q30 14 60 14 Q90 14 92 40Z" ${s('#ffffff')}/><rect x="26" y="33" width="68" height="9" rx="3" ${s('#f06292', 0.85)}/>`,
+        extra: `<path d="M40 118 Q60 114 80 118 L82 150 Q60 158 38 150Z" ${s('#f8bbd0', 0.85)}/>
+          <path d="M38 126 Q60 132 82 126 M38 138 Q60 144 82 138" fill="none" stroke="#fff" stroke-width="3" opacity=".8"/>`,
       };
     case 'jeweler':
       return {
         shirt: '#26a69a',
         legs: '#37474f',
-        extra: `<path d="M50 96 L60 108 L70 96" fill="#fff" stroke="${OUT}" stroke-width="3"/><circle cx="60" cy="112" r="4" fill="#ffd54f" stroke="${OUT}" stroke-width="2"/>`,
+        extra: `<path d="M50 95 L60 107 L70 95" fill="#fff" stroke="${OUT}" stroke-width="3" stroke-linejoin="round"/><circle cx="60" cy="114" r="4.5" fill="#ffd54f" stroke="${OUT}" stroke-width="2"/>`,
+        face: `<circle cx="69" cy="58" r="8" fill="#b3e5fc" fill-opacity=".35" stroke="${OUT}" stroke-width="2.5"/><path d="M77 58 L92 56" stroke="${OUT}" stroke-width="2"/>`,
       };
     case 'banker':
       return {
         shirt: '#34495e',
         legs: '#2c3e50',
-        extra: `<path d="M48 94 L60 104 L72 94 L66 130 L54 130Z" fill="#fff"/><path d="M57 102 L63 102 L66 124 L60 130 L54 124Z" fill="#e53935" stroke="${OUT}" stroke-width="2"/>`,
+        extra: `<path d="M47 94 L60 106 L73 94 L66 132 L54 132Z" fill="#fff"/><path d="M57 102 L63 102 L66 126 L60 132 L54 126Z" fill="#e53935" stroke="${OUT}" stroke-width="2"/>
+          <path d="M47 94 L56 118 M73 94 L64 118" stroke="${OUT}" stroke-width="2.5" opacity=".6"/>`,
       };
     case 'fancy':
       return {
@@ -360,15 +532,19 @@ function outfit(role: Role): Outfit {
       return {
         shirt: '#ffb300',
         legs: '#1e3a5f',
-        hat: `<path d="M30 36 Q32 12 60 12 Q88 12 90 36Z" fill="#1e3a5f" stroke="${OUT}" stroke-width="4"/><path d="M84 34 Q104 32 106 40 L86 40Z" fill="#1e3a5f" stroke="${OUT}" stroke-width="3"/>`,
-        extra: `<path d="M34 96 L86 146" stroke="#6d4c41" stroke-width="6"/>`,
+        hat: `<path d="M28 40 Q30 12 60 12 Q90 12 92 40Z" ${s('#1e3a5f')}/>
+          <path d="M86 37 Q108 32 112 43 Q100 46 86 44Z" ${s('#16304f')}/>${shine('M40 26 Q44 18 52 16')}`,
+        extra: `<path d="M34 98 L88 150" stroke="${OUT}" stroke-width="9" stroke-linecap="round"/><path d="M34 98 L88 150" stroke="#8d6e63" stroke-width="5" stroke-linecap="round"/>`,
       };
     case 'gardener':
       return {
         shirt: '#7cb342',
         legs: '#5d4037',
-        hat: `<ellipse cx="60" cy="34" rx="44" ry="9" fill="#f3d27a" stroke="${OUT}" stroke-width="3.5"/><path d="M36 34 Q38 12 60 12 Q82 12 84 34Z" fill="#f3d27a" stroke="${OUT}" stroke-width="3.5"/>`,
-        extra: `<path d="M38 112 H82 V156 H38Z" fill="#a1887f" stroke="${OUT}" stroke-width="3"/>`,
+        shoe: '#4e342e',
+        hat: `<ellipse cx="60" cy="36" rx="45" ry="9" ${s('#f3d27a')}/><path d="M36 36 Q38 12 60 12 Q82 12 84 36Z" ${s('#f3d27a')}/>
+          <path d="M36.5 30 Q60 34 83.5 30 L84 35 Q60 39 36 35Z" fill="#7cb342"/>`,
+        extra: `<path d="M38 112 Q60 108 82 112 V156 Q60 162 38 156Z" ${s('#a1887f', 0.85)}/>
+          <rect x="52" y="128" width="16" height="12" rx="2" fill="#8d6e63" stroke="${OUT}" stroke-width="2"/>`,
       };
     case 'dog':
       return { shirt: '', legs: '' };
@@ -377,86 +553,93 @@ function outfit(role: Role): Outfit {
 
 export function ownerSvg(role: Role, look: Look): string {
   if (role === 'dog') return dogSvg();
-  const o = outfit(role);
+  const p = new Pen();
+  const o = outfit(p, role);
   const l: Look = o.hairColor ? { ...look, hairColor: o.hairColor } : look;
-  const skin = l.skin;
-  const k = l.build;
-  const shirtD = tone(o.shirt, -0.22);
-  return `<svg viewBox="0 0 120 200" width="120" height="200">
-    <ellipse class="shadow" cx="60" cy="194" rx="${42 + k}" ry="8" fill="#000" opacity=".18"/>
-    <rect class="leg l" x="40" y="150" width="15" height="40" rx="6" fill="${o.legs}" stroke="${OUT}" stroke-width="3"/>
-    <rect class="leg r" x="65" y="150" width="15" height="40" rx="6" fill="${o.legs}" stroke="${OUT}" stroke-width="3"/>
-    <path d="M58 152 V188" stroke="#000" stroke-width="5" opacity=".08"/>
-    <ellipse cx="46" cy="192" rx="12" ry="6" fill="${OUT}"/><ellipse cx="74" cy="192" rx="12" ry="6" fill="${OUT}"/>
-    <path d="M38 190 q6 -3 12 0 M68 190 q6 -3 12 0" stroke="#fff" stroke-width="2" opacity=".35" fill="none"/>
-    <g class="arms">
-      <rect x="${16 - k}" y="98" width="14" height="44" rx="7" fill="${o.shirt}" stroke="${OUT}" stroke-width="3" transform="rotate(-20 ${23 - k} 100)"/>
-      <rect x="${90 + k}" y="98" width="14" height="44" rx="7" fill="${shirtD}" stroke="${OUT}" stroke-width="3" transform="rotate(20 ${97 + k} 100)"/>
-      <circle cx="${38 - k}" cy="140" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
-      <circle cx="${82 + k}" cy="140" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
-    </g>
-    <rect x="${28 - k}" y="92" width="${64 + 2 * k}" height="66" rx="${18 + k / 2}" fill="${o.shirt}" stroke="${OUT}" stroke-width="4"/>
-    <path d="M${70 + k} 96 Q${92 + k} 110 ${88 + k} 154 L${70 + k} 156 Q${84 + k} 124 ${70 + k} 96Z" fill="#000" opacity=".12"/>
-    <path d="M${34 - k} 104 Q${38 - k} 96 ${48 - k / 2} 95" stroke="#fff" stroke-width="3" fill="none" opacity=".35" stroke-linecap="round"/>
-    <path d="M50 93 L60 104 L70 93" fill="none" stroke="${OUT}" stroke-width="2.5" opacity=".45"/>
-    ${o.extra && role !== 'elder' ? o.extra : ''}
-    <g class="head" style="animation-delay:-${(Math.random() * 6).toFixed(1)}s" transform="translate(0 2)">${headBase(l, faces(60, 60), (role === 'elder' ? o.extra : '') + (o.hat ?? ''))}</g>
-  </svg>`;
+  const k = o.child ? -3 : l.build;
+  const t = o.child ? -14 : l.height;
+  const face = `${faces(60, 60, l.skin)}${lashes(l, 51, 69, 59, 4.4)}${l.mustache && !o.child ? `<path d="M48 70 Q54 65 60 69 Q66 65 72 70 Q66 74 60 71 Q54 74 48 70Z" fill="${l.hairColor}" ${out(0.5)}/>` : ''}${o.face ?? ''}`;
+  const upper = `${torso(p, k, o.shirt)}
+    ${o.extra ?? ''}
+    <g class="arms">${armsDown(p, k, o.shirt, l.skin)}</g>
+    <g class="head" style="animation-delay:-${(Math.random() * 6).toFixed(1)}s" transform="translate(0 6)">${headBase(p, l, face, o.hat ?? '')}</g>`;
+  return figure(p, k, t, legs(p, k, 154 - t, o.legs, o.shoe), upper);
 }
 
 function dogSvg(): string {
-  return `<svg viewBox="0 0 120 200" width="120" height="200">
-    <ellipse class="shadow" cx="60" cy="194" rx="46" ry="8" fill="#000" opacity=".15"/>
-    <rect x="30" y="150" width="14" height="40" rx="6" fill="#d7a86e" stroke="${OUT}" stroke-width="3"/>
-    <rect x="76" y="150" width="14" height="40" rx="6" fill="#d7a86e" stroke="${OUT}" stroke-width="3"/>
-    <path class="tail" d="M92 130 Q116 110 108 92" fill="none" stroke="${OUT}" stroke-width="12" stroke-linecap="round"/>
-    <path class="tail" d="M92 130 Q116 110 108 92" fill="none" stroke="#d7a86e" stroke-width="6" stroke-linecap="round"/>
-    <ellipse cx="60" cy="140" rx="38" ry="28" fill="#d7a86e" stroke="${OUT}" stroke-width="4"/>
-    <ellipse cx="60" cy="84" rx="32" ry="30" fill="#d7a86e" stroke="${OUT}" stroke-width="4"/>
-    <ellipse cx="28" cy="80" rx="10" ry="22" fill="#8d6e63" stroke="${OUT}" stroke-width="4" transform="rotate(15 28 80)"/>
-    <ellipse cx="92" cy="80" rx="10" ry="22" fill="#8d6e63" stroke="${OUT}" stroke-width="4" transform="rotate(-15 92 80)"/>
-    <ellipse cx="60" cy="98" rx="14" ry="10" fill="#f3e0c4"/>
-    <ellipse cx="60" cy="92" rx="7" ry="5" fill="${OUT}"/>
-    <rect x="36" y="112" width="48" height="8" rx="4" fill="#e53935" stroke="${OUT}" stroke-width="2.5"/>
-    ${faces(60, 76)}
-  </svg>`;
+  const p = new Pen();
+  const fur = '#d7a86e';
+  const ear = '#8d6e63';
+  const f = p.fill(fur);
+  const legPath = (x: number) => `<path d="M${x} 150 H${x + 14} L${x + 13} 186 Q${x + 7} 190 ${x + 1} 186Z" fill="${f}" ${out(0.85)}/>
+    <ellipse cx="${x + 7}" cy="188" rx="9" ry="5" fill="${tone(fur, 0.25)}" ${out(0.85)}/>`;
+  const body = `
+    ${groundShadow(4)}
+    ${legPath(30)}${legPath(76)}
+    <path class="tail" d="M92 130 Q116 110 108 92" fill="none" stroke="${OUT}" stroke-width="${8 + SW * 2}" stroke-linecap="round"/>
+    <path class="tail" d="M92 130 Q116 110 108 92" fill="none" stroke="${fur}" stroke-width="8" stroke-linecap="round"/>
+    <ellipse cx="60" cy="140" rx="38" ry="28" fill="${f}" ${out()}/>
+    ${shade('M78 116 Q102 134 90 160 Q76 170 60 168 Q88 150 78 116Z')}
+    <ellipse cx="58" cy="146" rx="20" ry="14" fill="#f3e0c4" opacity=".8"/>
+    ${shine('M30 132 Q32 120 44 115')}
+    <ellipse cx="60" cy="84" rx="33" ry="30" fill="${f}" ${out()}/>
+    ${shade('M84 66 Q96 90 74 110 Q90 92 84 66Z')}
+    <ellipse cx="44" cy="68" rx="9" ry="6" fill="#fff" opacity=".28" transform="rotate(-25 44 68)"/>
+    <ellipse cx="27" cy="82" rx="10" ry="22" fill="${p.fill(ear)}" ${out()} transform="rotate(15 27 82)"/>
+    <ellipse cx="93" cy="82" rx="10" ry="22" fill="${p.fill(ear)}" ${out()} transform="rotate(-15 93 82)"/>
+    <ellipse cx="74" cy="72" rx="9" ry="8" fill="${tone(fur, -0.25)}" opacity=".6"/>
+    <ellipse cx="60" cy="99" rx="15" ry="11" fill="#f3e0c4"/>
+    <ellipse cx="60" cy="93" rx="7.5" ry="5.5" fill="${OUT}"/><ellipse cx="58" cy="91.5" rx="2.5" ry="1.5" fill="#fff" opacity=".6"/>
+    <rect x="35" y="111" width="50" height="9" rx="4.5" fill="${p.fill('#e53935')}" ${out(0.7)}/>
+    <circle cx="60" cy="124" r="5" fill="#ffd54f" ${out(0.6)}/>
+    ${faces(60, 76)}`;
+  return `<svg viewBox="0 0 120 200" width="120" height="200">${p.flush()}${body}</svg>`;
+}
+
+// ---------- Police ----------
+
+function policeCap(p: Pen): string {
+  return `<path d="M26 38 Q28 6 60 8 Q92 6 94 38Z" fill="${p.fill('#2f5aa8')}" ${out()}/>
+    ${shine('M38 24 Q42 14 52 12')}
+    <rect x="23" y="33" width="74" height="11" rx="4" fill="${p.fill('#1f3f7a')}" ${out()}/>
+    <path d="M30 44 Q60 52 90 44" fill="#16305e" ${out(0.8)}/>
+    <path d="M60 14 l4 8 h8 l-6 5 l2 8 l-8 -5 l-8 5 l2 -8 l-6 -5 h8Z" fill="#ffd54f" stroke="${OUT}" stroke-width="1.5" stroke-linejoin="round"/>`;
+}
+
+function policeFace(l: Look): string {
+  return `<g class="blink" ${blinkDelay()}>${eyes(60, 57)}</g>
+    <path d="M59 62 q4 4 -1 6" fill="none" stroke="${tone(l.skin, -0.35)}" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M48 71 Q60 81 72 71" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
+    ${lashes(l, 51, 69, 57, 4.4)}
+    ${l.mustache ? `<path d="M48 69 Q54 64 60 68 Q66 64 72 69 Q66 73 60 70 Q54 73 48 69Z" fill="${l.hairColor}" ${out(0.5)}/>` : ''}
+    <ellipse cx="40" cy="69" rx="6" ry="3.5" fill="${BLUSH}" opacity=".45"/><ellipse cx="80" cy="69" rx="6" ry="3.5" fill="${BLUSH}" opacity=".45"/>`;
 }
 
 /** Police officer's head for the car's front window. viewBox 0 0 120 100. */
 export function policeHead(l: Look): string {
-  const face = `<g class="blink" ${blinkDelay()}><circle cx="51" cy="58" r="3.5" fill="${OUT}"/><circle cx="69" cy="58" r="3.5" fill="${OUT}"/></g>
-    <path d="M50 70 Q60 78 70 70" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>`;
-  const cap = `<path d="M26 36 Q30 6 60 8 Q90 6 94 36Z" fill="#2f5aa8" stroke="${OUT}" stroke-width="4"/>
-    <rect x="24" y="32" width="72" height="10" rx="4" fill="#1f3f7a" stroke="${OUT}" stroke-width="4"/>
-    <path d="M60 14 l4 8 h8 l-6 5 l2 8 l-8 -5 l-8 5 l2 -8 l-6 -5 h8Z" fill="#ffd54f" stroke="${OUT}" stroke-width="1.5"/>`;
-  return headBase(l, face, cap);
+  const p = new Pen();
+  const h = headBase(p, l, policeFace(l), policeCap(p));
+  return p.flush() + h;
 }
 
 /** Full-body police officer. viewBox 0 0 120 200. `.escorting` shows the arm that holds the rosvo. */
 export function officerSvg(l: Look): string {
+  const p = new Pen();
+  const k = l.build;
+  const t = l.height;
+  const blue = '#3d6fc4';
   const skin = l.skin;
-  const cap = `<path d="M26 36 Q30 6 60 8 Q90 6 94 36Z" fill="#2f5aa8" stroke="${OUT}" stroke-width="4"/>
-    <rect x="24" y="32" width="72" height="10" rx="4" fill="#1f3f7a" stroke="${OUT}" stroke-width="4"/>
-    <path d="M60 14 l4 8 h8 l-6 5 l2 8 l-8 -5 l-8 5 l2 -8 l-6 -5 h8Z" fill="#ffd54f" stroke="${OUT}" stroke-width="1.5"/>`;
-  return `<svg viewBox="0 0 120 200" width="120" height="200">
-    <ellipse class="shadow" cx="60" cy="194" rx="42" ry="8" fill="#000" opacity=".15"/>
-    <rect class="leg l" x="40" y="150" width="15" height="40" rx="6" fill="#1f2f4f" stroke="${OUT}" stroke-width="3"/>
-    <rect class="leg r" x="65" y="150" width="15" height="40" rx="6" fill="#1f2f4f" stroke="${OUT}" stroke-width="3"/>
-    <ellipse cx="46" cy="192" rx="12" ry="6" fill="${OUT}"/><ellipse cx="74" cy="192" rx="12" ry="6" fill="${OUT}"/>
-    <rect x="16" y="98" width="14" height="46" rx="7" fill="#3d6fc4" stroke="${OUT}" stroke-width="3" transform="rotate(-10 23 100)"/>
-    <circle cx="30" cy="144" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/>
-    <g class="arm-rest"><rect x="90" y="98" width="14" height="46" rx="7" fill="#3d6fc4" stroke="${OUT}" stroke-width="3" transform="rotate(10 97 100)"/>
-      <circle cx="90" cy="144" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/></g>
-    <g class="arm-escort"><rect x="90" y="100" width="14" height="44" rx="7" fill="#3d6fc4" stroke="${OUT}" stroke-width="3" transform="rotate(-62 97 104)"/>
-      <circle cx="136" cy="120" r="8" fill="${skin}" stroke="${OUT}" stroke-width="3"/></g>
-    <rect x="28" y="92" width="64" height="66" rx="18" fill="#3d6fc4" stroke="${OUT}" stroke-width="4"/>
-    <path d="M70 96 Q92 110 88 154 L70 156 Q84 124 70 96Z" fill="#000" opacity=".14"/>
-    <path d="M34 104 Q38 96 48 95" stroke="#fff" stroke-width="3" fill="none" opacity=".35" stroke-linecap="round"/>
-    <path d="M60 94 V156" stroke="${OUT}" stroke-width="2" opacity=".35"/>
-    <rect x="28" y="140" width="64" height="9" fill="#1f2f4f"/>
-    <path d="M42 110 l4 8 h8 l-6 5 l2 8 l-8 -5 l-8 5 l2 -8 l-6 -5 h8Z" fill="#ffd54f" stroke="${OUT}" stroke-width="1.5" transform="translate(-4 -4) scale(.9)"/>
-    <g transform="translate(0 2)">${headBase(l, `<g class="blink" ${blinkDelay()}><circle cx="51" cy="58" r="3.5" fill="${OUT}"/><circle cx="69" cy="58" r="3.5" fill="${OUT}"/></g>
-      <path d="M48 70 Q60 80 72 70" fill="none" stroke="${OUT}" stroke-width="3.5" stroke-linecap="round"/>
-      <ellipse cx="42" cy="68" rx="5" ry="3" fill="${BLUSH}" opacity=".5"/><ellipse cx="78" cy="68" rx="5" ry="3" fill="${BLUSH}" opacity=".5"/>`, cap)}</g>
-  </svg>`;
+  const upper = `${torso(p, k, blue)}
+    <path d="M60 96 V160" stroke="${OUT}" stroke-width="2" opacity=".35"/>
+    ${[112, 128].map((y) => `<circle cx="60" cy="${y}" r="2.2" fill="#ffd54f" stroke="${OUT}" stroke-width="1.2"/>`).join('')}
+    <path d="M${40 - k} 112 h14 v10 h-14Z M${66 + k} 112 h14 v10 h-14Z" fill="${tone(blue, -0.12)}" stroke="${OUT}" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M${28 - k} 142 Q60 150 ${92 + k} 142 V151 Q60 159 ${28 - k} 151Z" fill="#1f2f4f" stroke="${OUT}" stroke-width="2.5" stroke-linejoin="round"/>
+    <rect x="54" y="143" width="12" height="10" rx="2" fill="#ffd54f" stroke="${OUT}" stroke-width="2"/>
+    <path d="M60 14 l4 8 h8 l-6 5 l2 8 l-8 -5 l-8 5 l2 -8 l-6 -5 h8Z" fill="#ffd54f" stroke="${OUT}" stroke-width="2" stroke-linejoin="round" transform="translate(${47 - k} 98) scale(.6) translate(-60 -24)"/>
+    <rect x="${72 + k}" y="102" width="9" height="13" rx="2" fill="#263238" stroke="${OUT}" stroke-width="1.8"/><path d="M${78 + k} 102 v-5" stroke="${OUT}" stroke-width="2" stroke-linecap="round"/>
+    ${limb(`M${36 - k} 104 Q${27 - k} 120 ${29 - k} 139`, blue)}${hand(p, 29 - k, 146, 7, -3, skin)}
+    <g class="arm-rest">${limb(`M${84 + k} 104 Q${93 + k} 120 ${91 + k} 139`, blue)}${hand(p, 91 + k, 146, -7, -3, skin)}</g>
+    <g class="arm-escort">${limb(`M${84 + k} 104 Q${108 + k} 112 130 ${118 + t}`, blue)}${hand(p, 136, 120 + t, -4, -7, skin)}</g>
+    <g transform="translate(0 6)">${headBase(p, l, policeFace(l), policeCap(p))}</g>`;
+  return figure(p, k, t, legs(p, k, 154 - t, '#1f2f4f'), upper);
 }
