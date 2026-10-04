@@ -175,3 +175,13 @@ regrowing flames tuned by feel, the later ideas in section 4.
 - `src/fire/mode.ts`: boot, stage scaling, input routing, test hook
 - `src/fire/fire.css`: styles for the fire mode
 - `src/people.ts`: `firefighterSvg()` next to the police officer
+
+## 8. Screenshots (MVP, iPad size)
+
+| Start | Fire and alarm | Driving |
+|---|---|---|
+| ![](screenshots/1-start.png) | ![](screenshots/2-fire-alarm.png) | ![](screenshots/3-driving.png) |
+
+| Hose | Saved (third fire) |
+|---|---|
+| ![](screenshots/4-hose.png) | ![](screenshots/5-saved.png) |
