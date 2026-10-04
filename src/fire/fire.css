@@ -342,13 +342,22 @@ body[data-time='night'] .fprop .lamp-glow {
   opacity: 1;
 }
 
-/* The whole town is seen from above, so the tint covers it evenly, from where the sky picture ends. */
+/* One tint over everything, painted landscape included, so the back row and
+   the meadow it stands on darken together. The evening and night pictures
+   are brightened to make up for the tint on top of them. */
 .fire-game .tint {
-  top: 100px !important;
+  top: -1200px !important;
+  height: 3200px;
 }
 .fire-game .tint.evening {
   background: rgba(255, 120, 70, 0.2);
 }
 .fire-game .tint.night {
   background: rgba(16, 26, 84, 0.45);
+}
+.fire-game .sky-img.evening:not(.filtered) {
+  filter: brightness(1.15);
+}
+.fire-game .sky-img.night:not(.filtered) {
+  filter: brightness(1.6);
 }

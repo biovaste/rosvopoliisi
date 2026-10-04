@@ -54,8 +54,7 @@ export function groundSvg(): string {
       for (let i = 0; i < 5; i++) parts.push(`<rect x="${x + ROAD_HALF + 8}" y="${y - ROAD_HALF + 4 + i * 10.4}" width="22" height="6" rx="2" fill="#f7f3e8" opacity=".9"/>`);
   return `<svg viewBox="0 0 ${W} 800" width="${W}" height="800" style="overflow:visible">
     <defs>${grass.def}${asphalt.def}${walk.def}${sand.def}</defs>
-    <rect x="${-ext}" y="110" width="${W + 2 * ext}" height="${800 + ext}" fill="${grass.fill}"/>
-    <path d="M${-ext} 110 H${W + ext}" stroke="#6f9f3a" stroke-width="4" opacity=".6"/>
+    <rect x="${-ext}" y="${STREET_Y[0]}" width="${W + 2 * ext}" height="${800 + ext}" fill="${grass.fill}"/>
     ${parts.join('')}
     ${parkSvg(sand.fill)}
   </svg>`;

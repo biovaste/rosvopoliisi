@@ -168,8 +168,8 @@ export function buildFireScene(app: HTMLElement, look: Look): FireScene {
 }
 
 /**
- * The police town's painted sky, raised so that only its sky and far hills show
- * above the town. Mirrored copies on both sides cover wide screens; evening and
+ * The police town's painted landscape (sky, hills and meadow) as the background
+ * of everything behind street 1. Mirrored copies on both sides cover wide screens; evening and
  * night pictures cross-fade in (or the day one with a colour filter).
  */
 function skyPanorama(stage: HTMLElement): void {
@@ -191,8 +191,11 @@ function skyPanorama(stage: HTMLElement): void {
   }
 }
 
-/** Where the sky picture's top goes, so its hills sit just above the town's edge (y 110). */
-const SKY_TOP = -250;
+/**
+ * Where the sky picture's top goes: its bottom (the flat meadow) reaches
+ * street 1, so the back row of buildings stands on the painted landscape.
+ */
+const SKY_TOP = 300 - 560;
 
 /** Keeps the sticker shelf just inside the top of the visible area. */
 export function placeFireShelf(shelf: HTMLElement, view: { scale: number; oy: number }): void {

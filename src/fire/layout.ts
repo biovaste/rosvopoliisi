@@ -141,8 +141,27 @@ export function roadPath(from: Pt, to: Pt): Pt[] {
 
 // ---------- Buildings ----------
 
-/** The police town's buildings, reused as pictures. `police` is the police station (it never burns). */
-export type Kind = 'home' | 'bakery' | 'bank' | 'jewelry' | 'police';
+/** What a building is: `home`, or one of the one-of-a-kind buildings in SPECIALS. */
+export type Kind = string;
+
+/**
+ * One-of-a-kind buildings: each appears once per town if its picture exists.
+ * The police station and the hospital never burn. New pictures (school,
+ * library, store, hospital, kindergarten) appear once processed.
+ */
+const SPECIALS: { kind: Kind; pic: string; burnable: boolean }[] = [
+  { kind: 'police', pic: 'station', burnable: false },
+  { kind: 'bakery', pic: 'bakery', burnable: true },
+  { kind: 'bank', pic: 'bank', burnable: true },
+  { kind: 'jewelry', pic: 'jewelry', burnable: true },
+  { kind: 'school', pic: 'school', burnable: true },
+  { kind: 'library', pic: 'library', burnable: true },
+  { kind: 'store', pic: 'store', burnable: true },
+  { kind: 'hospital', pic: 'hospital', burnable: false },
+  { kind: 'kindergarten', pic: 'kindergarten', burnable: true },
+];
+/** At least this many plots stay homes. */
+const MIN_HOMES = 4;
 
 export interface House {
   id: number;
@@ -173,8 +192,9 @@ export interface House {
 }
 
 /** Flame spots per picture, as fractions of its width and height: upper windows first, then the roof.
- * Extra home pictures use the `home` spots, so they should keep two upper windows in about the same place. */
-const FIRE_SPOTS: Record<Exclude<Kind, 'police'>, [number, number, number][]> = {
+ * Extra home pictures use the `home` spots; new buildings use `other` until measured. */
+const FIRE_SPOTS: Record<string, [number, number, number][]> = {
+  other: [[0.3, 0.45, 1], [0.7, 0.45, 1], [0.5, 0.18, 1.2], [0.2, 0.3, 1], [0.8, 0.3, 1]],
   home: [[0.38, 0.47, 1], [0.68, 0.47, 1], [0.5, 0.2, 1.2], [0.25, 0.3, 1], [0.78, 0.3, 1]],
   bakery: [[0.43, 0.45, 1], [0.72, 0.45, 1], [0.58, 0.16, 1.2], [0.3, 0.3, 1], [0.86, 0.3, 1]],
   bank: [[0.23, 0.52, 1], [0.85, 0.52, 1], [0.5, 0.2, 1.3], [0.45, 0.52, 1], [0.64, 0.52, 1]],
@@ -209,12 +229,27 @@ function makeHouses(): House[] {
     ...BLOCKS.filter((b) => b !== stationBlock).flatMap((b) => plots(1, b, 165)),
     ...BLOCKS.filter((b) => b !== PARK).flatMap((b) => plots(2, b, 165)),
   ];
-  // The police station stands in the back row; each shop appears once, the rest are homes.
+  // Each one-of-a-kind building appears once (wide ones on the wider back-row plots);
+  // the rest are homes. With many pictures, a random few sit out this session.
   const kinds: Kind[] = lots.map(() => 'home');
-  const back = shuffle(lots.map((l, i) => (l.row === 0 ? i : -1)).filter((i) => i >= 0));
-  kinds[back[0]] = 'police';
-  const others = shuffle(lots.map((_, i) => i).filter((i) => i !== back[0]));
-  (['bakery', 'bank', 'jewelry'] as Kind[]).forEach((k, j) => (kinds[others[j]] = k));
+  const pics: Record<number, BuildingArt> = {};
+  const burn: Record<number, boolean> = {};
+  const all = SPECIALS.map((sp) => ({ ...sp, art: buildingArt(sp.pic) })).filter((sp): sp is (typeof sp & { art: BuildingArt }) => !!sp.art);
+  const chosen = [all[0], ...shuffle(all.slice(1))].slice(0, Math.max(1, lots.length - MIN_HOMES));
+  const wide = (a: BuildingArt) => a.w / a.h > 1.1;
+  const backFree = shuffle(lots.map((l, i) => (l.row === 0 ? i : -1)).filter((i) => i >= 0));
+  const anyFree = shuffle(lots.map((_, i) => i));
+  const take = (i: number) => {
+    for (const free of [backFree, anyFree]) if (free.includes(i)) free.splice(free.indexOf(i), 1);
+    return i;
+  };
+  // The police station and wide buildings go in the back row first.
+  for (const sp of chosen.sort((a, b) => Number(b.kind === 'police' || wide(b.art)) - Number(a.kind === 'police' || wide(a.art)))) {
+    const i = take((sp.kind === 'police' || wide(sp.art)) && backFree.length ? backFree[0] : anyFree[0]);
+    kinds[i] = sp.kind;
+    pics[i] = sp.art;
+    burn[i] = sp.burnable;
+  }
   const tints = shuffle(HOME_TINTS);
   // Homes cycle through every home picture there is; only repeats get a colour change.
   const homePics = shuffle(['home', 'home2', 'home3', 'home4', 'home5', 'home6'].map(buildingArt).filter((a): a is BuildingArt => !!a));
@@ -224,7 +259,7 @@ function makeHouses(): House[] {
     const kind = kinds[id];
     const r = ROW[l.row];
     const repeat = kind === 'home' && homes >= homePics.length;
-    const art = kind === 'home' ? homePics[homes++ % homePics.length] : (buildingArt(kind === 'police' ? 'station' : kind) as BuildingArt);
+    const art = kind === 'home' ? homePics[homes++ % homePics.length] : pics[id];
     const s = Math.min((l.x1 - l.x0 - 14) / art.w, (r.base - r.roofTop) / art.h);
     const w = art.w * s;
     const h = art.h * s;
@@ -242,7 +277,8 @@ function makeHouses(): House[] {
     // The residents watch from across the street (row 2 houses: from the far side of street 2).
     const wait = { x: Math.min(1170, cx + 34), y: l.row === 2 ? r.curbY - 32 : r.curbY + 38 };
     const k = s / 0.62;
-    const fires = kind === 'police' ? [] : FIRE_SPOTS[kind].map(([a, b, kk]) => ({ x: fx(a), y: top + b * h, k: kk * k }));
+    const burnable = kind === 'home' || burn[id];
+    const fires = !burnable ? [] : (FIRE_SPOTS[kind] ?? FIRE_SPOTS.other).map(([a, b, kk]) => ({ x: fx(a), y: top + b * h, k: kk * k }));
     return {
       id,
       row: l.row,
@@ -254,7 +290,7 @@ function makeHouses(): House[] {
       base: r.base,
       filter: repeat ? tints[id % tints.length] : 'none',
       flip,
-      burnable: kind !== 'police',
+      burnable,
       // Row 2 houses face away from street 2: their people come round from the back garden.
       door: l.row === 2 ? { x: cx, y: top - 6 } : { x: fx(art.door), y: r.base + 4 },
       curb,

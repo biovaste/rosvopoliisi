@@ -39,6 +39,12 @@ BUILDINGS = {
     'home4': {'box': (200, 240), 'door': 0.5, 'erase': [], 'seeds': []},
     'home5': {'box': (200, 240), 'door': 0.5, 'erase': [], 'seeds': []},
     'home6': {'box': (200, 240), 'door': 0.5, 'erase': [], 'seeds': []},
+    # More one-of-a-kind buildings for the fire mode (optional).
+    'school': {'box': (300, 250), 'door': 0.5, 'erase': [], 'seeds': []},
+    'library': {'box': (250, 240), 'door': 0.5, 'erase': [], 'seeds': []},
+    'store': {'box': (230, 220), 'door': 0.5, 'erase': [], 'seeds': []},
+    'hospital': {'box': (300, 260), 'door': 0.5, 'erase': [], 'seeds': []},
+    'kindergarten': {'box': (270, 220), 'door': 0.5, 'erase': [], 'seeds': []},
 }
 
 

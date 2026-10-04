@@ -32,8 +32,8 @@ everything keeps the same size wherever it is, which keeps targets
 predictable for small fingers.
 
 ```
- y   0 ┌──────────── painted sky and far hills (may be cut off on phones) ───────┐
-   120 │  ▲house  ▲shop   ▲police  ▲house  ▲house      row 0 (faces street 1)     │
+ y   0 ┌──── painted landscape: sky, hills, meadow (top may be cut off on phones) ──┐
+   120 │  ▲house  ▲shop   ▲police  ▲house  ▲house      row 0, on the meadow       │
    330 ╞══════════════════════ street 1 ═══════════════════════════════════════════╡
        │  FIRE STATION   ║   ▲house ▲house   ║   ▲house ▲shop    row 1             │
    590 ╞════════════════ street 2 ═══════════╬═══════════════════╬═══════════════════╡
@@ -48,9 +48,12 @@ and stays the same during a session so the way to the station can be learned:
 - The two cross lanes move: one of five lane plans is picked. Each leaves at
   least one block in row 1 wide enough for the fire station.
 - The fire station goes in a random row 1 block, the park in a random row 2
-  block, the police station on a random back-row plot.
-- The other blocks are split into house plots. The bakery, bank and
-  jewellery shop appear once each; the rest are homes. Homes cycle through
+  block.
+- The other blocks are split into plots. Each one-of-a-kind building whose
+  picture exists (police station, bakery, bank, jewellery shop, and later the
+  school, library, store, hospital and kindergarten) appears once; the police
+  station and wide buildings get the wider back-row plots. At least four
+  plots stay homes. The rest are homes. Homes cycle through
   every home picture there is, and repeats get a gentle colour change (and
   sometimes a mirror image).
 - Trees and bushes fill the gaps between buildings; street lamps stand on
@@ -140,7 +143,7 @@ through the same `art-src/` → `tools/prepare_art.py` pipeline.
 | `home`, `bakery`, `bank`, `jewelry` | All the burnable buildings, about 0.6x size. Flames sit on their upper windows and roofs (fractions per picture in `src/fire/layout.ts`). |
 | `station` | The police station in the back row (it never burns). |
 | `tile-grass`, `tile-street`, `tile-sidewalk`, `tile-sand` | Texture fills for the lawns, roads, sidewalks and park path. |
-| `sky-day`, `sky-evening`, `sky-night` | Raised so only the sky and far hills show above the town. |
+| `sky-day`, `sky-evening`, `sky-night` | The background of everything behind street 1: sky, hills and the meadow the back row stands on. |
 | `tree-apple`, `tree-birch`, `tree-autumn`, `bush`, `bench`, `fence`, `lamp` | Gaps between buildings, the park and street corners. |
 
 ### Still drawn in code
@@ -155,15 +158,17 @@ through the same `art-src/` → `tools/prepare_art.py` pipeline.
 
 ### Pictures still to generate
 
-Prompts in the same style as the existing art are in
+Copy-paste prompts in the same style as the existing art are in
 [art-prompts.md](art-prompts.md). In priority order:
 
 1. **Fire station**, with the garage open and the door as a separate picture
    so it can still roll up. The code-drawn one is the most out-of-place thing
    on screen now.
 2. **Fire truck** from the side, front and back.
-3. **4–5 more homes** (`home2`–`home6`), so fewer homes repeat. These plug in
-   by themselves once processed.
+3. **More buildings for variety:** a school, a library, a grocery store, a
+   hospital and a kindergarten (each appears once per town; the hospital
+   never burns), and 4–5 more homes (`home2`–`home6`). These plug in by
+   themselves once processed.
 4. Optional: a pond and a sandbox, and a fire hydrant for later ideas.
 
 ## 6. MVP scope
