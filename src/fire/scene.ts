@@ -7,7 +7,8 @@ import type { FxHost } from '../fx';
 import { firefighterHead, firefighterSvg, type Look } from '../people';
 import { Sprite } from '../tween';
 import * as art from './art';
-import { ALARM, GARAGE, GARAGE_IN, H, HOUSES, LAMPS, SHELF, STATION, W, type House } from './layout';
+import { SKY, propArt } from '../images';
+import { ALARM, GARAGE, GARAGE_IN, H, HOUSES, LAMPS, PROPS, SHELF, STATION, W, type House } from './layout';
 
 export const FZ = { tint: 4000, smoke: 4050, fire: 4100, hose: 3500, water: 4200, bubble: 4300, shelf: 5000, fx: 6000, hand: 7000 };
 
@@ -50,21 +51,6 @@ function place(el: HTMLElement, x: number, y: number, z: number): HTMLElement {
   return el;
 }
 
-/** Trees in the gaps between houses and in the park: x, bottom y, radius, colour. */
-const TREES: [number, number, number, string][] = [
-  [235, 286, 22, '#5aac44'],
-  [465, 286, 27, '#4e9f3d'],
-  [729, 286, 22, '#6cbf4a'],
-  [957, 286, 20, '#5aac44'],
-  [1190, 286, 20, '#4e9f3d'],
-  [64, 676, 26, '#4e9f3d'],
-  [326, 708, 22, '#6cbf4a'],
-  [250, 800, 30, '#5aac44'],
-  [602, 800, 18, '#6cbf4a'],
-  [1018, 800, 20, '#4e9f3d'],
-  [862, 470, 16, '#6cbf4a'],
-];
-
 export function buildFireScene(app: HTMLElement, look: Look): FireScene {
   const root = div('game fire-game', app);
   const stage = div('stage', root);
@@ -74,24 +60,35 @@ export function buildFireScene(app: HTMLElement, look: Look): FireScene {
   div('sky day', stage);
   div('sky evening', stage);
   div('sky night', stage);
-  const sky = div('skybits', stage);
-  const clouds = div('clouds', sky);
-  for (let i = 0; i < 3; i++) {
-    div(
-      `cloud c${i}`,
-      clouds,
-      `<svg viewBox="0 0 170 74" width="140" height="61"><path d="M20 64 Q0 64 6 46 Q10 30 32 34 Q40 8 72 14 Q94 0 114 20 Q146 12 152 38 Q170 46 158 64Z" fill="#fff" stroke="#3a2c2a" stroke-width="2.5" opacity=".95"/></svg>`,
-    );
-  }
-  place(div('prop fire-hills', stage, art.hillsSvg()), 0, 0, 3);
+  skyPanorama(stage);
   place(div('prop', stage, art.groundSvg()), 0, 0, 2);
 
-  // Houses.
+  // Buildings: the police town's pictures, with a soot layer that shows after a fire.
   const houses: HouseView[] = HOUSES.map((house) => {
-    const b = art.houseBox(house);
-    const el = place(div('prop fhouse', stage, art.houseSvg(house)), b.x, b.y, house.base);
+    const w = house.x1 - house.x0;
+    const h = house.base - house.top;
+    const soot = house.fires
+      .slice(0, 3)
+      .map((f) => `<i style="left:${(f.x - house.x0 - 26 * f.k).toFixed(0)}px;top:${(f.y - house.top - 44 * f.k).toFixed(0)}px;width:${(52 * f.k).toFixed(0)}px;height:${(52 * f.k).toFixed(0)}px"></i>`)
+      .join('');
+    const el = place(
+      div('prop fhouse', stage, `<img src="${house.art.url}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" alt="" style="filter:${house.filter};${house.flip ? 'transform:scaleX(-1)' : ''}"><div class="soot">${soot}</div>`),
+      house.x0,
+      house.top,
+      house.base,
+    );
     return { house, el };
   });
+
+  // Trees, bushes, benches, fences and street lamps.
+  for (const p of PROPS) {
+    const a = propArt(p.name);
+    if (!a) continue;
+    const w = a.w * p.k;
+    const h = a.h * p.k;
+    const el = place(div(`prop fprop ${p.name}`, stage, `<img src="${a.url}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" alt="">`), p.x - w / 2, p.y - h, p.y);
+    if (p.name === 'lamp') el.insertAdjacentHTML('beforeend', `<div class="lamp-glow" style="left:${(w / 2 - 22).toFixed(0)}px;top:${(h * 0.17 - 22).toFixed(0)}px"></div>`);
+  }
 
   // Fire station: building, garage door, alarm button and progress lamps.
   const sb = art.stationBox();
@@ -99,8 +96,6 @@ export function buildFireScene(app: HTMLElement, look: Look): FireScene {
   const door = place(div('garage-door', stage, art.garageDoorSvg()), GARAGE.x0, GARAGE.top, STATION.base + 2);
   const alarm = place(div('alarm', stage, `<div class="alarm-ring"></div>${art.alarmSvg()}`), ALARM.x - 40, ALARM.y - 40, STATION.base + 3);
   const lamps = LAMPS.map((p) => place(div('flamp', stage, art.lampSvg()), p.x - 18, p.y - 18, STATION.base + 3));
-
-  for (const [x, y, r, c] of TREES) place(div('prop', stage, art.treeSvg(r, c)), x - r - 6, y - (r * 2 + 30) + 6, y);
 
   for (const t of ['evening', 'night']) div(`tint ${t}`, stage).style.zIndex = String(FZ.tint);
 
@@ -171,6 +166,33 @@ export function buildFireScene(app: HTMLElement, look: Look): FireScene {
     hand,
   };
 }
+
+/**
+ * The police town's painted sky, raised so that only its sky and far hills show
+ * above the town. Mirrored copies on both sides cover wide screens; evening and
+ * night pictures cross-fade in (or the day one with a colour filter).
+ */
+function skyPanorama(stage: HTMLElement): void {
+  const sky = div('sky-art', stage);
+  if (!SKY.day) return;
+  for (const t of ['day', 'evening', 'night'] as const) {
+    const a = SKY[t] ?? SKY.day;
+    for (const side of [-1, 0, 1]) {
+      const img = document.createElement('img');
+      img.className = `sky-img ${t}${SKY[t] ? '' : ' filtered'}`;
+      img.src = a.url;
+      img.width = a.w;
+      img.height = a.h;
+      img.alt = '';
+      const x = (W - a.w) / 2 + side * a.w;
+      img.style.transform = `translate3d(${x}px,${SKY_TOP}px,0)${side ? ' scaleX(-1)' : ''}`;
+      sky.appendChild(img);
+    }
+  }
+}
+
+/** Where the sky picture's top goes, so its hills sit just above the town's edge (y 110). */
+const SKY_TOP = -250;
 
 /** Keeps the sticker shelf just inside the top of the visible area. */
 export function placeFireShelf(shelf: HTMLElement, view: { scale: number; oy: number }): void {

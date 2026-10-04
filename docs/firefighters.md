@@ -25,28 +25,45 @@ Fire is scary in real life, so here it stays friendly:
 ## 2. The town and the camera
 
 The police game shows one street from the side. The fire game needs to show a
-route, so the camera moves up: a high, frontal "storybook map" view. Front
-walls of buildings face the viewer and roofs are seen from above, like a
-Richard Scarry or classic top-down RPG town. There is no perspective scaling:
+route, so the camera moves up: a high "storybook map" view, as in classic
+top-down games. Roads are seen from above, while buildings, trees and
+vehicles are drawn from the front. There is no perspective scaling:
 everything keeps the same size wherever it is, which keeps targets
 predictable for small fingers.
 
 ```
- y   0 ┌──────────── sky, hills, far trees (may be cut off on phones) ────────────┐
-   120 │  ▲house  ▲house   ▲house   ▲house  ▲house      row A (faces street 1)    │
+ y   0 ┌──────────── painted sky and far hills (may be cut off on phones) ───────┐
+   120 │  ▲house  ▲shop   ▲police  ▲house  ▲house      row 0 (faces street 1)     │
    330 ╞══════════════════════ street 1 ═══════════════════════════════════════════╡
-       │  FIRE STATION   ║   ▲house ▲house   ║   ▲house ▲house   row B             │
+       │  FIRE STATION   ║   ▲house ▲house   ║   ▲house ▲shop    row 1             │
    590 ╞════════════════ street 2 ═══════════╬═══════════════════╬═══════════════════╡
-       │  park, pond     ║   ▲house ▲house   ║   ▲house ▲house   row C             │
+       │  ▲house ▲house  ║   park, pond      ║   ▲house ▲house   row 2             │
    800 └─────────────────╨───────────────────╨───────────────────────────────────┘
                       lane 1               lane 2
 ```
 
-- Two long streets and two cross lanes make six blocks.
-- 13 houses in three rows, plus the fire station and a park.
+**The plan changes every session** (every page load), like the police town,
+and stays the same during a session so the way to the station can be learned:
+
+- The two cross lanes move: one of five lane plans is picked. Each leaves at
+  least one block in row 1 wide enough for the fire station.
+- The fire station goes in a random row 1 block, the park in a random row 2
+  block, the police station on a random back-row plot.
+- The other blocks are split into house plots. The bakery, bank and
+  jewellery shop appear once each; the rest are homes. Homes cycle through
+  every home picture there is, and repeats get a gentle colour change (and
+  sometimes a mirror image).
+- Trees and bushes fill the gaps between buildings; street lamps stand on
+  the corners.
+- The road network for the truck is built from the plan, so route-finding
+  works for any layout.
+
+Rules a plan must keep: buildings in different rows never overlap (that keeps
+the drawing order simple), every plot has a road beside it for the truck,
+and the station faces street 2.
+
 - Vehicles show their side when they drive left/right and their front or
-  back when they drive down/up. Houses only ever show their front wall and
-  roof, so they never need turning.
+  back when they drive down/up.
 - On wide screens (phones, 16:10 tablets) up to 110 px of sky is trimmed from
   the top, exactly like the police game trims its sky.
 
@@ -112,45 +129,42 @@ hydrant; the truck washing itself at the station at the end of a level.
 
 ## 5. Graphical assets
 
-The police game uses AI-generated pictures for big static things (sky,
-buildings, ground textures, trees, props) and code-drawn SVG for anything that
-animates or changes colour. The side-view pictures don't work from above, so
-the fire mode needs its own set. The MVP draws **everything in SVG** in the
-same storybook style (soft colours, `#3a2c2a` outlines) and can swap in
-pictures later through the same `art-src/` → `tools/prepare_art.py` pipeline.
+Like the police game: generated pictures for big things that don't move, and
+code-drawn SVG for anything that animates or changes colour. The pictures go
+through the same `art-src/` → `tools/prepare_art.py` pipeline.
 
-### Needed for the MVP (all code-drawn now)
+### Reused from the police game
 
-| Asset | Kind | Notes |
-|---|---|---|
-| Ground: grass, asphalt, sidewalk, lane markings, crossings | static | top-down; one SVG backdrop |
-| Sky band, hills, far tree line | static | three times of day via tints |
-| House, front wall + roof from above, 3 shapes | static, recoloured | windows, door, chimney; soot overlay |
-| Fire station: brick front, garage door, tower, 3 progress lamps, alarm button | static + animated door/lamps | |
-| Fire truck: side, front and back views | animated | ladder, hose reel, flashing lights |
-| Firefighter: standing, holding the nozzle | animated | helmet, reflective coat |
-| Residents, cat, dog | reuse | from the police game's people drawings, scaled down |
-| Flame (3 sizes via scale) | animated | CSS flicker |
-| Smoke puff, steam puff, water arc, splash | animated | CSS / SVG |
-| Hose line | dynamic | SVG path from reel to nozzle |
-| Trees and bushes from above, pond, playground, benches | static | park and gaps between houses |
-| Start-screen fire button | static | flame + helmet |
+| Picture | Used for |
+|---|---|
+| `home`, `bakery`, `bank`, `jewelry` | All the burnable buildings, about 0.6x size. Flames sit on their upper windows and roofs (fractions per picture in `src/fire/layout.ts`). |
+| `station` | The police station in the back row (it never burns). |
+| `tile-grass`, `tile-street`, `tile-sidewalk`, `tile-sand` | Texture fills for the lawns, roads, sidewalks and park path. |
+| `sky-day`, `sky-evening`, `sky-night` | Raised so only the sky and far hills show above the town. |
+| `tree-apple`, `tree-birch`, `tree-autumn`, `bush`, `bench`, `fence`, `lamp` | Gaps between buildings, the park and street corners. |
 
-### Pictures worth generating later (in priority order)
+### Still drawn in code
 
-1. **Fire station** (front + roof from above, garage door as a separate
-   layer so it can roll up): it is always on screen and sets the look.
-2. **3–4 house pictures** from above (front wall + roof), neutral wall
-   colour so code can tint them, plus a soot overlay.
-3. **Ground tiles** from above: grass, asphalt, sidewalk (the police ones
-   are side-on and stretched, they don't read right from above).
-4. **Trees and bushes from above**, park props (pond, sandbox, bench).
-5. **Fire truck** in three views (side, front, back) with separate light and
-   window rectangles like the police van's metadata.
-6. **Sky band** with hills for the top edge, three times of day.
+| Asset | Why |
+|---|---|
+| Fire station, garage door, alarm button, progress lamps | No picture yet (see prompts) |
+| Fire truck in three views | No picture yet (see prompts) |
+| Firefighter, residents, cat, dog | Animate; match the police game's characters |
+| Flames, smoke, steam, water, splash, hose | Animate and change size continuously |
+| Pond, sandbox | Simple shapes that move with the park |
 
-Characters, flames, water and smoke should stay code-drawn: they animate,
-change size continuously and need to match the existing character style.
+### Pictures still to generate
+
+Prompts in the same style as the existing art are in
+[art-prompts.md](art-prompts.md). In priority order:
+
+1. **Fire station**, with the garage open and the door as a separate picture
+   so it can still roll up. The code-drawn one is the most out-of-place thing
+   on screen now.
+2. **Fire truck** from the side, front and back.
+3. **4–5 more homes** (`home2`–`home6`), so fewer homes repeat. These plug in
+   by themselves once processed.
+4. Optional: a pond and a sandbox, and a fire hydrant for later ideas.
 
 ## 6. MVP scope
 
@@ -163,25 +177,30 @@ In:
 - Idle hints for every step, single-pointer input, the parent controls.
 - An end-to-end test that plays a level with touch emulation.
 
-Out (for now): generated pictures, residents strolling around between fires,
+Out (for now): generated pictures for the station and truck, residents strolling around between fires,
 regrowing flames tuned by feel, the later ideas in section 4.
 
 ## 7. Code layout
 
-- `src/fire/layout.ts`: town geometry, the road network and path finding
-- `src/fire/art.ts`: SVG for the ground, houses, station, truck, flames
+- `src/fire/layout.ts`: the per-session town plan, the road network and path finding
+- `src/fire/art.ts`: SVG for the roads, station, truck and flames
+- `docs/art-prompts.md`: prompts for the pictures still to generate
 - `src/fire/scene.ts`: builds the depth-sorted town
 - `src/fire/game.ts`: the round, difficulty, input and hints
 - `src/fire/mode.ts`: boot, stage scaling, input routing, test hook
 - `src/fire/fire.css`: styles for the fire mode
 - `src/people.ts`: `firefighterSvg()` next to the police officer
 
-## 8. Screenshots (MVP, iPad size)
+## 8. Screenshots (iPad size)
 
 | Start | Fire and alarm | Driving |
 |---|---|---|
 | ![](screenshots/1-start.png) | ![](screenshots/2-fire-alarm.png) | ![](screenshots/3-driving.png) |
 
-| Hose | Saved (third fire) |
-|---|---|
-| ![](screenshots/4-hose.png) | ![](screenshots/5-saved.png) |
+| Hose | Saved (third fire) | Night |
+|---|---|---|
+| ![](screenshots/4-hose.png) | ![](screenshots/5-saved.png) | ![](screenshots/6-night.png) |
+
+Another session, another town:
+
+![](screenshots/7-another-town.png)

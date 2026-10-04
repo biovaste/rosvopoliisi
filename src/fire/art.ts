@@ -1,102 +1,79 @@
-// SVG art for the fire mode, drawn from high up: front walls face the viewer,
-// roofs are seen from above. Same soft storybook style as the police town.
+// SVG art for the fire mode. The buildings, trees, props, ground textures
+// and sky are the police town's generated pictures (see scene.ts); this file
+// draws the roads around them, the fire station, the truck, and the fire.
 
-import { OUT, tone, vgrad, wob } from '../draw';
-import { LANE_END, LANE_X, ROAD_HALF, STATION, STREET_Y, GARAGE, WALK, W, type House } from './layout';
+import { OUT, vgrad } from '../draw';
+import { TILES } from '../images';
+import { GARAGE, LANE_END, LANE_X, PARK, ROAD_HALF, STATION, STREET_Y, WALK, W } from './layout';
 
 const o = (k = 1) => `stroke="${OUT}" stroke-width="${(3.5 * k).toFixed(1)}" stroke-linejoin="round"`;
 
 // ---------- Ground ----------
 
+/** A texture fill from a generated tile (k = size), or a flat colour without one. */
+function texture(id: string, tile: { url: string; w: number; h: number } | null, k: number, color: string): { def: string; fill: string } {
+  if (!tile) return { def: '', fill: color };
+  const w = tile.w * k;
+  const h = tile.h * k;
+  return {
+    def: `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${w}" height="${h}"><image href="${tile.url}" width="${w}" height="${h}" preserveAspectRatio="none"/></pattern>`,
+    fill: `url(#${id})`,
+  };
+}
+
 /** Grass, roads, sidewalks, crossings and the park, as one picture. */
 export function groundSvg(): string {
   const ext = 1200;
-  const asphalt = '#6f7378';
-  const walk = '#d9d2c3';
+  const grass = texture('fg-grass', TILES.grass, 0.5, '#8cc152');
+  const asphalt = texture('fg-street', TILES.street, 0.6, '#6f7378');
+  const walk = texture('fg-walk', TILES.sidewalk, 0.3, '#d9d2c3');
+  const sand = texture('fg-sand', TILES.sand, 0.4, '#f1d38a');
   const parts: string[] = [];
+  const laneH = LANE_END + 60 - STREET_Y[0];
   // Sidewalks first (they sit under the asphalt).
-  for (const y of STREET_Y) parts.push(`<rect x="${-ext}" y="${y - ROAD_HALF - WALK}" width="${W + 2 * ext}" height="${2 * (ROAD_HALF + WALK)}" fill="${walk}"/>`);
-  for (const x of LANE_X) parts.push(`<rect x="${x - ROAD_HALF - WALK}" y="${STREET_Y[0]}" width="${2 * (ROAD_HALF + WALK)}" height="${LANE_END + 60 - STREET_Y[0]}" fill="${walk}"/>`);
+  for (const y of STREET_Y) parts.push(`<rect x="${-ext}" y="${y - ROAD_HALF - WALK}" width="${W + 2 * ext}" height="${2 * (ROAD_HALF + WALK)}" fill="${walk.fill}"/>`);
+  for (const x of LANE_X) parts.push(`<rect x="${x - ROAD_HALF - WALK}" y="${STREET_Y[0]}" width="${2 * (ROAD_HALF + WALK)}" height="${laneH}" fill="${walk.fill}"/>`);
   // Driveway in front of the garage.
-  parts.push(`<rect x="${GARAGE.x0 - 6}" y="${STATION.base - 2}" width="${GARAGE.x1 - GARAGE.x0 + 12}" height="${STREET_Y[1] - STATION.base}" fill="#c9c1b0"/>`);
+  parts.push(`<rect x="${GARAGE.x0 - 6}" y="${STATION.base - 2}" width="${GARAGE.x1 - GARAGE.x0 + 12}" height="${STREET_Y[1] - STATION.base}" fill="${walk.fill}"/>`);
   // Asphalt.
-  for (const y of STREET_Y) parts.push(`<rect x="${-ext}" y="${y - ROAD_HALF}" width="${W + 2 * ext}" height="${2 * ROAD_HALF}" fill="${asphalt}"/>`);
-  for (const x of LANE_X) parts.push(`<rect x="${x - ROAD_HALF}" y="${STREET_Y[0]}" width="${2 * ROAD_HALF}" height="${LANE_END + 60 - STREET_Y[0]}" fill="${asphalt}"/>`);
+  for (const y of STREET_Y) parts.push(`<rect x="${-ext}" y="${y - ROAD_HALF}" width="${W + 2 * ext}" height="${2 * ROAD_HALF}" fill="${asphalt.fill}"/>`);
+  for (const x of LANE_X) parts.push(`<rect x="${x - ROAD_HALF}" y="${STREET_Y[0]}" width="${2 * ROAD_HALF}" height="${laneH}" fill="${asphalt.fill}"/>`);
   // Kerb lines.
-  const kerb = (x1: number, y1: number, x2: number, y2: number) => `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="#a9a397" stroke-width="3"/>`;
-  for (const y of STREET_Y) {
-    parts.push(kerb(-ext, y - ROAD_HALF, W + ext, y - ROAD_HALF), kerb(-ext, y + ROAD_HALF, W + ext, y + ROAD_HALF));
-  }
+  for (const y of STREET_Y)
+    for (const e of [-1, 1]) parts.push(`<path d="M${-ext} ${y + e * ROAD_HALF} H${W + ext}" stroke="#8d877c" stroke-width="3"/>`);
+  for (const x of LANE_X)
+    for (const e of [-1, 1])
+      parts.push(`<path d="M${x + e * ROAD_HALF} ${STREET_Y[0] + ROAD_HALF} V${STREET_Y[1] - ROAD_HALF} M${x + e * ROAD_HALF} ${STREET_Y[1] + ROAD_HALF} V${LANE_END + 60}" stroke="#8d877c" stroke-width="3"/>`);
   // Centre dashes, skipping the crossings.
-  const dash = (d: string) => `<path d="${d}" stroke="#f7f3e8" stroke-width="4" stroke-dasharray="22 18" stroke-linecap="round"/>`;
+  const dash = (d: string) => `<path d="${d}" stroke="#f7f3e8" stroke-width="4" stroke-dasharray="22 18" stroke-linecap="round" opacity=".9"/>`;
   for (const y of STREET_Y) parts.push(dash(`M${-ext} ${y} H${W + ext}`));
   for (const x of LANE_X) parts.push(dash(`M${x} ${STREET_Y[0] + ROAD_HALF + 10} V${STREET_Y[1] - ROAD_HALF - 10} M${x} ${STREET_Y[1] + ROAD_HALF + 10} V${LANE_END + 60}`));
   // Zebra crossings next to the corners.
   for (const x of LANE_X)
-    for (const y of STREET_Y) {
+    for (const y of STREET_Y)
       for (let i = 0; i < 5; i++) parts.push(`<rect x="${x + ROAD_HALF + 8}" y="${y - ROAD_HALF + 4 + i * 10.4}" width="22" height="6" rx="2" fill="#f7f3e8" opacity=".9"/>`);
-    }
-  // Grass tufts and flowers scattered on the lawns (fixed pattern).
-  const tufts: string[] = [];
-  for (let i = 0; i < 70; i++) {
-    const x = ((i * 0.618034) % 1) * 1180 + 10;
-    const y = 130 + ((i * 0.381966 * 7) % 1) * 660;
-    if (STREET_Y.some((sy) => Math.abs(y - sy) < 50) || LANE_X.some((lx) => Math.abs(x - lx) < 50 && y > 330)) continue;
-    tufts.push(i % 5 === 0 ? `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="4" fill="${['#fff59d', '#f8bbd0', '#ffffff'][i % 3]}" stroke="${OUT}" stroke-width="1.2"/>` : `<path d="M${x.toFixed(0)} ${y.toFixed(0)} l-3 -7 M${x.toFixed(0)} ${y.toFixed(0)} l0 -9 M${x.toFixed(0)} ${y.toFixed(0)} l3 -7" stroke="#4e8f2f" stroke-width="2" stroke-linecap="round"/>`);
-  }
   return `<svg viewBox="0 0 ${W} 800" width="${W}" height="800" style="overflow:visible">
-    <rect x="${-ext}" y="110" width="${W + 2 * ext}" height="${800 + ext}" fill="#8cc152"/>
-    <path d="M${-ext} 118 H${W + ext} V140 H${-ext}Z" fill="#7fb547"/>
-    ${tufts.join('')}
+    <defs>${grass.def}${asphalt.def}${walk.def}${sand.def}</defs>
+    <rect x="${-ext}" y="110" width="${W + 2 * ext}" height="${800 + ext}" fill="${grass.fill}"/>
+    <path d="M${-ext} 110 H${W + ext}" stroke="#6f9f3a" stroke-width="4" opacity=".6"/>
     ${parts.join('')}
-    ${parkSvg()}
+    ${parkSvg(sand.fill)}
   </svg>`;
 }
 
-/** Pond, sandbox and paths in the park (bottom left block). Trees are separate props. */
-function parkSvg(): string {
-  return `<path d="${wob([[40, 690], [120, 660], [230, 668], [290, 708], [250, 760], [130, 772], [52, 742]], 4)}" fill="#7cc6ea" ${o()}/>
-    <path d="M80 700 Q140 680 210 690" stroke="#fff" stroke-width="4" fill="none" opacity=".6" stroke-linecap="round"/>
-    <ellipse cx="170" cy="726" rx="16" ry="6" fill="#5aac44" ${o(0.6)}/>
-    <rect x="290" y="732" width="56" height="44" rx="6" fill="#f1d38a" ${o()}/>
-    <rect x="286" y="728" width="64" height="52" rx="8" fill="none" stroke="#a1774a" stroke-width="5"/>
-    <circle cx="310" cy="752" r="5" fill="#e53935" ${o(0.5)}/><path d="M326 748 l10 -8 l4 10Z" fill="#42a5f5" ${o(0.5)}/>`;
+/** Pond, sandbox and a sand path in the park block (trees and benches are pictures). */
+function parkSvg(sand: string): string {
+  const x0 = PARK.x0;
+  const w = PARK.x1 - PARK.x0;
+  const px = (f: number) => x0 + f * w;
+  return `<path d="M${px(0.1)} 760 Q${px(0.5)} 700 ${px(0.95)} 676" stroke="${OUT}" stroke-width="26" fill="none" stroke-linecap="round" opacity=".5"/>
+    <path d="M${px(0.1)} 760 Q${px(0.5)} 700 ${px(0.95)} 676" stroke="${sand}" stroke-width="22" fill="none" stroke-linecap="round"/>
+    <path d="M${px(0.1)} 716 C${px(0.1)} 684 ${px(0.3)} 672 ${px(0.42)} 678 C${px(0.56)} 684 ${px(0.66)} 700 ${px(0.6)} 726 C${px(0.55)} 750 ${px(0.32)} 758 ${px(0.2)} 748 C${px(0.12)} 742 ${px(0.1)} 730 ${px(0.1)} 716Z" fill="#7cc6ea" ${o()}/>
+    <path d="M${px(0.2)} 696 Q${px(0.35)} 684 ${px(0.5)} 692" stroke="#fff" stroke-width="4" fill="none" opacity=".6" stroke-linecap="round"/>
+    <ellipse cx="${px(0.4)}" cy="724" rx="12" ry="5" fill="#5aac44" ${o(0.6)}/>
+    <rect x="${px(0.7)}" y="732" width="62" height="44" rx="8" fill="${sand}" stroke="#a1774a" stroke-width="6"/>
+    <circle cx="${px(0.7) + 18}" cy="754" r="5" fill="#e53935" ${o(0.5)}/><path d="M${px(0.7) + 36} 750 l10 -8 l4 10Z" fill="#42a5f5" ${o(0.5)}/>`;
 }
-
-/** Sky band with hills and a row of far trees along the top. */
-export function hillsSvg(): string {
-  const trees = Array.from({ length: 26 }, (_, i) => {
-    const x = -60 + i * 52 + (i % 3) * 7;
-    const r = 15 + (i % 4) * 3;
-    return `<circle cx="${x}" cy="${118 - r * 0.6}" r="${r}" fill="${i % 2 ? '#5f9e3c' : '#6dab45'}" stroke="${OUT}" stroke-width="2.5"/>`;
-  }).join('');
-  return `<svg viewBox="0 0 ${W} 140" width="${W}" height="140" style="overflow:visible">
-    <path d="M-1200 120 Q-900 40 -600 92 Q-300 30 0 86 Q220 30 430 80 Q640 26 860 78 Q1040 36 1200 84 Q1500 40 2400 90 V140 H-1200Z" fill="#9dcf6a" stroke="${OUT}" stroke-width="3"/>
-    ${trees}</svg>`;
-}
-
-// ---------- Trees ----------
-
-export function treeSvg(r: number, color: string): string {
-  const w = r * 2 + 12;
-  const h = r * 2 + 30;
-  const c = vgrad(color, 0.22, -0.15);
-  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><defs>${c.def}</defs>
-    <ellipse cx="${w / 2}" cy="${h - 6}" rx="${r * 0.8}" ry="6" fill="#000" opacity=".15"/>
-    <rect x="${w / 2 - 6}" y="${h - 30}" width="12" height="24" rx="4" fill="#8d6e63" ${o(0.8)}/>
-    <path d="${wob(
-      Array.from({ length: 9 }, (_, i) => {
-        const a = (i / 9) * Math.PI * 2;
-        const rr = r * (i % 2 ? 0.92 : 1);
-        return [w / 2 + Math.cos(a) * rr, r + 6 + Math.sin(a) * rr] as [number, number];
-      }),
-      3,
-    )}" fill="${c.fill}" ${o()}/>
-    <ellipse cx="${w / 2 - r * 0.35}" cy="${r * 0.6}" rx="${r * 0.3}" ry="${r * 0.18}" fill="#fff" opacity=".25"/>
-  </svg>`;
-}
-
-// ---------- Houses ----------
 
 /** Window with a frame and curtains, top-left at (x, y). */
 function win(x: number, y: number, w: number, h: number): string {
@@ -104,80 +81,6 @@ function win(x: number, y: number, w: number, h: number): string {
     <path d="M${x + w / 2} ${y} V${y + h} M${x} ${y + h / 2} H${x + w}" stroke="${OUT}" stroke-width="2"/>
     <path d="M${x + 2} ${y + 2} Q${x + w * 0.3} ${y + h * 0.5} ${x + 3} ${y + h - 2} M${x + w - 2} ${y + 2} Q${x + w * 0.7} ${y + h * 0.5} ${x + w - 3} ${y + h - 2}" stroke="#fff" stroke-width="2" fill="none" opacity=".7"/>
     <rect class="win-glow" x="${x + 2}" y="${y + 2}" width="${w - 4}" height="${h - 4}" fill="#ffd54f"/>`;
-}
-
-/** Where a house's picture goes (top-left) and how big it is. */
-export function houseBox(h: House): { x: number; y: number; w: number; h: number } {
-  return { x: h.x0 - 16, y: h.roofTop - 40, w: h.x1 - h.x0 + 32, h: h.base - h.roofTop + 48 };
-}
-
-export function houseSvg(h: House): string {
-  const b = houseBox(h);
-  const X = (x: number) => x - b.x;
-  const Y = (y: number) => y - b.y;
-  const x0 = X(h.x0);
-  const x1 = X(h.x1);
-  const cx = (x0 + x1) / 2;
-  const base = Y(h.base);
-  const wallH = h.shape === 'tall' ? h.wallH * 1.45 : h.wallH;
-  const wallTop = base - wallH;
-  const top = Y(h.roofTop);
-  const wall = vgrad(h.wall, 0.15, -0.1);
-  const roof = h.roof;
-  const ov = 9;
-  const defs = [wall.def];
-  let roofSvg = '';
-  if (h.shape === 'gable') {
-    const gh = 18;
-    roofSvg = `<path d="M${x0 - ov} ${wallTop + 4} L${x0 - ov} ${top + 6} Q${x0 - ov} ${top} ${x0} ${top} H${cx} V${wallTop - gh}Z" fill="${tone(roof, 0.12)}" ${o()}/>
-      <path d="M${x1 + ov} ${wallTop + 4} L${x1 + ov} ${top + 6} Q${x1 + ov} ${top} ${x1} ${top} H${cx} V${wallTop - gh}Z" fill="${tone(roof, -0.12)}" ${o()}/>
-      ${[0.25, 0.5, 0.75].map((t) => `<path d="M${x0 - ov + 4} ${top + (wallTop - top) * t} L${cx - 3} ${top + (wallTop - gh - top) * t}" stroke="${tone(roof, -0.3)}" stroke-width="2" opacity=".6"/>`).join('')}
-      ${[0.25, 0.5, 0.75].map((t) => `<path d="M${x1 + ov - 4} ${top + (wallTop - top) * t} L${cx + 3} ${top + (wallTop - gh - top) * t}" stroke="${tone(roof, -0.4)}" stroke-width="2" opacity=".6"/>`).join('')}
-      <path d="M${x0} ${wallTop} L${cx} ${wallTop - gh} L${x1} ${wallTop}Z" fill="${wall.fill}" ${o()}/>
-      <circle cx="${cx}" cy="${wallTop - gh * 0.45}" r="5" fill="#bfe6f7" ${o(0.6)}/>`;
-  } else if (h.shape === 'tall') {
-    const inset = (x1 - x0) * 0.22;
-    const flatT = top + (wallTop - top) * 0.3;
-    const flatB = top + (wallTop - top) * 0.62;
-    roofSvg = `<path d="M${x0 - ov} ${wallTop + 4} L${x0 - ov} ${top} H${x1 + ov} V${wallTop + 4}Z" fill="${tone(roof, -0.08)}" ${o()}/>
-      <path d="M${x0 - ov} ${top} L${x0 + inset} ${flatT} H${x1 - inset} L${x1 + ov} ${top}Z" fill="${tone(roof, 0.18)}" ${o(0.7)}/>
-      <path d="M${x0 - ov} ${top} L${x0 + inset} ${flatT} V${flatB} L${x0 - ov} ${wallTop + 4}Z" fill="${tone(roof, 0.06)}" ${o(0.7)}/>
-      <path d="M${x1 + ov} ${top} L${x1 - inset} ${flatT} V${flatB} L${x1 + ov} ${wallTop + 4}Z" fill="${tone(roof, -0.2)}" ${o(0.7)}/>
-      <rect x="${x0 + inset}" y="${flatT}" width="${x1 - x0 - 2 * inset}" height="${flatB - flatT}" fill="${tone(roof, 0.1)}" ${o(0.7)}/>`;
-  } else {
-    const ridge = top + (wallTop - top) * 0.42;
-    roofSvg = `<path d="M${x0 - ov} ${top + 4} Q${x0 - ov} ${top} ${x0 - ov + 4} ${top} H${x1 + ov - 4} Q${x1 + ov} ${top} ${x1 + ov} ${top + 4} V${ridge} H${x0 - ov}Z" fill="${tone(roof, 0.16)}" ${o()}/>
-      <path d="M${x0 - ov} ${ridge} H${x1 + ov} V${wallTop + 4} H${x0 - ov}Z" fill="${tone(roof, -0.06)}" ${o()}/>
-      ${[0.33, 0.66].map((t) => `<path d="M${x0 - ov + 3} ${ridge + (wallTop - ridge) * t} H${x1 + ov - 3}" stroke="${tone(roof, -0.3)}" stroke-width="2" opacity=".6"/>`).join('')}
-      <path d="M${x0 - ov + 3} ${top + (ridge - top) * 0.5} H${x1 + ov - 3}" stroke="${tone(roof, -0.15)}" stroke-width="2" opacity=".5"/>`;
-  }
-  // Chimney on the roof.
-  const chx = x0 + (x1 - x0) * 0.72;
-  const chy = top + (wallTop - top) * 0.3;
-  const chimney = `<rect x="${chx - 9}" y="${chy - 22}" width="18" height="28" rx="2" fill="#b5654a" ${o(0.8)}/><rect x="${chx - 12}" y="${chy - 26}" width="24" height="7" rx="2" fill="#8d4a36" ${o(0.8)}/>`;
-  // Front wall: windows and a door (two rows of windows for tall houses).
-  const ww = Math.min(26, (x1 - x0) * 0.18);
-  const wh = Math.min(24, h.wallH * 0.38);
-  const rowY = [base - h.wallH * 0.82];
-  if (h.shape === 'tall') rowY.unshift(wallTop + 10);
-  const doorW = 24;
-  const doorX = cx - doorW / 2;
-  const doorH = h.wallH * 0.62;
-  const windows = rowY.map((y) => win(x0 + (x1 - x0) * 0.12, y, ww, wh) + win(x1 - (x1 - x0) * 0.12 - ww, y, ww, wh)).join('');
-  const soot = `<g class="soot">${[0.22, 0.78].map((t) => `<ellipse cx="${x0 + (x1 - x0) * t}" cy="${base - h.wallH * 0.8}" rx="${ww * 0.9}" ry="${wh}" fill="#3b3330" opacity=".45"/>`).join('')}
-    <ellipse cx="${cx}" cy="${(top + wallTop) / 2}" rx="${(x1 - x0) * 0.4}" ry="${(wallTop - top) * 0.32}" fill="#3b3330" opacity=".35"/></g>`;
-  return `<svg viewBox="0 0 ${b.w} ${b.h}" width="${b.w}" height="${b.h}"><defs>${defs.join('')}</defs>
-    <ellipse cx="${cx}" cy="${base + 3}" rx="${(x1 - x0) / 2 + 10}" ry="6" fill="#000" opacity=".14"/>
-    ${chimney}
-    <rect x="${x0}" y="${wallTop}" width="${x1 - x0}" height="${wallH}" fill="${wall.fill}" ${o()}/>
-    <path d="M${x0 + 3} ${base - 6} H${x1 - 3}" stroke="${tone(h.wall, -0.2)}" stroke-width="5" opacity=".5"/>
-    ${roofSvg}
-    ${windows}
-    <rect x="${doorX}" y="${base - doorH}" width="${doorW}" height="${doorH}" rx="4" fill="${h.door}" ${o(0.8)}/>
-    <circle cx="${doorX + doorW - 6}" cy="${base - doorH / 2}" r="2.2" fill="#ffd54f"/>
-    <path d="M${doorX - 4} ${base} h${doorW + 8}" stroke="${OUT}" stroke-width="3"/>
-    ${soot}
-  </svg>`;
 }
 
 // ---------- Fire station ----------

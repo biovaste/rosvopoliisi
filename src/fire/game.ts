@@ -105,10 +105,12 @@ async function startLevel(): Promise<void> {
 function pickHouse(): House {
   const t = tier();
   const rows = t === 0 ? [1] : t === 1 ? [1, 2] : [0, 1, 2];
-  const ok = HOUSES.filter((h) => rows.includes(h.row) && !fs.burned.has(h.id));
-  // At the first level prefer houses close to the station.
-  if (t === 0) ok.sort((a, b) => a.x0 - b.x0);
-  return (t === 0 ? ok.slice(0, 2)[Math.floor(Math.random() * Math.min(2, ok.length))] : pick(ok)) ?? HOUSES[5];
+  const free = HOUSES.filter((h) => h.burnable && !fs.burned.has(h.id));
+  const ok = free.filter((h) => rows.includes(h.row));
+  // At the first level one of the two houses closest to the station.
+  const far = (h: House) => Math.hypot(h.curb.x - STATION_EXIT.x, h.curb.y - STATION_EXIT.y);
+  if (t === 0) ok.sort((a, b) => far(a) - far(b)).splice(2);
+  return pick(ok.length ? ok : free);
 }
 
 async function startFire(): Promise<void> {
@@ -191,7 +193,8 @@ function puff(cls: 'smoke' | 'steam', p: Pt): void {
 
 // ---------- Residents ----------
 
-const RES_ROLES: Role[] = ['kid', 'kid2', 'elder', 'fancy', 'gardener', 'postie', 'baker', 'worker'];
+// No construction worker: the hard hat looks too much like a firefighter's helmet.
+const RES_ROLES: Role[] = ['kid', 'kid2', 'elder', 'fancy', 'gardener', 'postie', 'baker'];
 
 async function residentsOut(h: House): Promise<void> {
   const cx = (h.x0 + h.x1) / 2;
@@ -205,7 +208,7 @@ async function residentsOut(h: House): Promise<void> {
     const s = new Sprite(el, 60, 200);
     s.depthZ = true;
     s.scale = SCALE_PERSON * (role === 'cat' || role === 'dog' ? 0.8 : 1);
-    const from = doorstep(h);
+    const from = h.door;
     s.at(from.x, from.y);
     fs.residents.push({ s });
     void (async () => {
@@ -216,12 +219,6 @@ async function residentsOut(h: House): Promise<void> {
       s.render();
     })();
   });
-}
-
-/** Where residents come out: the front door (row 2 houses: the back garden, facing street 2). */
-function doorstep(h: House): Pt {
-  const cx = (h.x0 + h.x1) / 2;
-  return h.row === 2 ? { x: cx, y: h.roofTop - 6 } : { x: cx, y: h.base + 4 };
 }
 
 async function walk(s: Sprite, p: Pt, speed: number): Promise<void> {
@@ -238,7 +235,7 @@ async function residentsHome(h: House): Promise<void> {
   await Promise.all(
     list.map(async ({ s }, i) => {
       await wait(i * 300);
-      await walk(s, doorstep(h), 160);
+      await walk(s, h.door, 160);
       s.el.classList.add('leave');
       await wait(900);
       s.el.remove();

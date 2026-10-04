@@ -33,6 +33,12 @@ BUILDINGS = {
     'bank': {'box': (250, 250), 'door': 0.5, 'erase': [], 'seeds': []},
     'jewelry': {'box': (200, 240), 'door': 0.79, 'erase': [], 'seeds': [(300, 760), (420, 760)]},
     'station': {'box': (330, 290), 'door': 0.5, 'erase': [], 'seeds': []},
+    # Extra homes for the fire mode's town (optional; set `door` to where each picture's door is).
+    'home2': {'box': (200, 240), 'door': 0.5, 'erase': [], 'seeds': []},
+    'home3': {'box': (200, 240), 'door': 0.5, 'erase': [], 'seeds': []},
+    'home4': {'box': (200, 240), 'door': 0.5, 'erase': [], 'seeds': []},
+    'home5': {'box': (200, 240), 'door': 0.5, 'erase': [], 'seeds': []},
+    'home6': {'box': (200, 240), 'door': 0.5, 'erase': [], 'seeds': []},
 }
 
 
@@ -84,7 +90,10 @@ def cut_out(path, erase, seeds, pockets=False):
 
 
 def building(name, cfg, meta):
-    img, bbox = cut_out(os.path.join(SRC, f'{name}.jpg'), cfg['erase'], cfg['seeds'])
+    path = os.path.join(SRC, f'{name}.jpg')
+    if not os.path.exists(path):
+        return
+    img, bbox = cut_out(path, cfg['erase'], cfg['seeds'])
     bw, bh = cfg['box']
     k = min(bw / img.width, bh / img.height)
     lw, lh = round(img.width * k), round(img.height * k)

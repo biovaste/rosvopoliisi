@@ -25,6 +25,13 @@ export const BUILDING_ART = Object.fromEntries(
   (Object.keys(B) as Kind[]).map((k) => [k, { ...B[k], url: url(k) ?? '' }]),
 ) as Record<Kind, BuildingArt>;
 
+/** Any building picture by name (e.g. the fire mode's extra homes `home2`..`home6`), if present. */
+export function buildingArt(name: string): BuildingArt | null {
+  const b = (meta.buildings as Record<string, Omit<BuildingArt, 'url'>>)[name];
+  const u = url(name);
+  return b && u ? { ...b, url: u } : null;
+}
+
 /** Roof height (from the top of the image) at logical x. */
 export function roofAt(a: BuildingArt, x: number): number {
   const i = Math.max(0, Math.min(a.roof.length - 1, Math.round(x / 2)));

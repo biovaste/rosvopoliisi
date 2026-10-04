@@ -4,27 +4,16 @@ body[data-mode='fire'] {
   background: #8cc152;
 }
 
-.fire-game .cloud.c1 {
-  top: 50px;
-}
-
-/* Windows light up in the evening and at night. */
-.fhouse .win-glow {
+/* The station's windows light up in the evening and at night. */
+.win-glow {
   opacity: 0;
   transition: opacity 1.8s;
 }
-body[data-time='evening'] .fhouse .win-glow {
+body[data-time='evening'] .win-glow {
   opacity: 0.35;
 }
-body[data-time='night'] .fhouse .win-glow {
+body[data-time='night'] .win-glow {
   opacity: 0.6;
-}
-.fhouse .soot {
-  opacity: 0;
-  transition: opacity 1.2s;
-}
-.fhouse.sooty .soot {
-  opacity: 1;
 }
 
 /* ---------- Station ---------- */
@@ -316,4 +305,50 @@ body[data-fire='drive'] .truck:not(.dragging):not(.moving) .tv {
 .bell-bubble.on svg {
   animation: wiggle 0.9s ease-in-out infinite;
   transform-origin: 50% 100%;
+}
+
+/* ---------- Pictures ---------- */
+
+.fhouse img,
+.fprop img {
+  display: block;
+}
+.fhouse .soot {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.2s;
+  pointer-events: none;
+}
+.fhouse .soot i {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(45, 38, 36, 0.55) 0, rgba(45, 38, 36, 0.3) 45%, rgba(45, 38, 36, 0) 70%);
+}
+.fhouse.sooty .soot {
+  opacity: 1;
+}
+.fprop .lamp-glow {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 236, 150, 0.95) 0, rgba(255, 214, 90, 0.45) 40%, rgba(255, 214, 90, 0) 70%);
+  opacity: 0;
+  transition: opacity 1.5s;
+}
+body[data-time='evening'] .fprop .lamp-glow,
+body[data-time='night'] .fprop .lamp-glow {
+  opacity: 1;
+}
+
+/* The whole town is seen from above, so the tint covers it evenly, from where the sky picture ends. */
+.fire-game .tint {
+  top: 100px !important;
+}
+.fire-game .tint.evening {
+  background: rgba(255, 120, 70, 0.2);
+}
+.fire-game .tint.night {
+  background: rgba(16, 26, 84, 0.45);
 }
