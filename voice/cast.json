@@ -1,0 +1,20 @@
+{
+  "_doc": "Voice slots used by the game (src/voice.ts picks them by role and gender). 'engine' says which service's clips the game ships for each slot; a slot's own 'engine' overrides the default. Fill in the ElevenLabs voice IDs from your voice library; Google ids are fi-FI Chirp 3 HD voices; Chatterbox clones voice/refs/<slot>.wav.",
+  "engine": "elevenlabs",
+  "slots": {
+    "officer-f": { "class": "officer", "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Kore",     "chatterbox": { "exaggeration": 0.5 } },
+    "officer-m": { "class": "officer", "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Charon",   "chatterbox": { "exaggeration": 0.5 } },
+    "rosvo-f1":  { "class": "rosvo",   "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Leda",     "chatterbox": { "exaggeration": 0.8 } },
+    "rosvo-f2":  { "class": "rosvo",   "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Zephyr",   "chatterbox": { "exaggeration": 0.8 } },
+    "rosvo-m1":  { "class": "rosvo",   "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Puck",     "chatterbox": { "exaggeration": 0.8 } },
+    "rosvo-m2":  { "class": "rosvo",   "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Fenrir",   "chatterbox": { "exaggeration": 0.8 } },
+    "adult-f1":  { "class": "adult",   "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Aoede",    "chatterbox": { "exaggeration": 0.6 } },
+    "adult-f2":  { "class": "adult",   "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Despina",  "chatterbox": { "exaggeration": 0.6 } },
+    "adult-m1":  { "class": "adult",   "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Orus",     "chatterbox": { "exaggeration": 0.6 } },
+    "adult-m2":  { "class": "adult",   "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Achird",   "chatterbox": { "exaggeration": 0.6 } },
+    "elder-f":   { "class": "elder",   "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Gacrux",   "chatterbox": { "exaggeration": 0.5 } },
+    "elder-m":   { "class": "elder",   "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Rasalgethi", "chatterbox": { "exaggeration": 0.5 } },
+    "kid1":      { "class": "kid",     "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Laomedeia", "chatterbox": { "exaggeration": 0.7 } },
+    "kid2":      { "class": "kid",     "elevenlabs": "", "google": "fi-FI-Chirp3-HD-Zubenelgenubi", "chatterbox": { "exaggeration": 0.7 } }
+  }
+}

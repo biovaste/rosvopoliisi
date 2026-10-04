@@ -1,0 +1,51 @@
+{
+  "_doc": "Finnish voice lines. Each key is said by one speaker class (see cast.json). 'variants' are different wordings; 'eleven' is an optional ElevenLabs v3 version with audio tags. Every variant is generated 'takes' times on engines that vary between runs. Sample lines (sample: true) are used for auditioning engines.",
+  "lines": {
+    "catch": { "speaker": "officer", "takes": 2, "sample": true, "variants": [
+      { "text": "Seis! Poliisi!", "eleven": "[shouting] Seis! Poliisi!" },
+      { "text": "Kiinni jäit!", "eleven": "[cheerfully] Kiinni jäit!" }
+    ]},
+    "jail": { "speaker": "officer", "takes": 2, "variants": [
+      { "text": "Selliin siitä!", "eleven": "[playfully] Selliin siitä!" },
+      { "text": "Hyvä, yksi kiinni!", "eleven": "[pleased] Hyvä, yksi kiinni!" }
+    ]},
+    "celebrate": { "speaker": "officer", "takes": 2, "sample": true, "variants": [
+      { "text": "Hienoa työtä!", "eleven": "[excited] Hienoa työtä!" },
+      { "text": "Kaikki rosvot kiinni!", "eleven": "[excited] Kaikki rosvot kiinni!" }
+    ]},
+    "hint": { "speaker": "officer", "takes": 2, "variants": [
+      { "text": "Katso tuolta!", "eleven": "[warmly] Katso tuolta!" },
+      { "text": "Mihin se rosvo meni?", "eleven": "[curious] Mihin se rosvo meni?" }
+    ]},
+
+    "steal": { "speaker": "rosvo", "takes": 2, "sample": true, "variants": [
+      { "text": "Hihii!", "eleven": "[mischievously] [giggles] Hihii!" },
+      { "text": "Tämä on nyt minun!", "eleven": "[mischievously] Tämä on nyt minun! [giggles]" }
+    ]},
+    "caught": { "speaker": "rosvo", "takes": 2, "variants": [
+      { "text": "Voi ei!", "eleven": "[surprised] Voi ei!" },
+      { "text": "Hups!", "eleven": "[sheepishly] Hups!" }
+    ]},
+    "sorry": { "speaker": "rosvo", "takes": 2, "sample": true, "variants": [
+      { "text": "Anteeksi!", "eleven": "[sheepishly] Anteeksi!" },
+      { "text": "Emme tee enää niin.", "eleven": "[sheepishly] Emme tee enää niin." }
+    ]},
+
+    "help-ball": { "speaker": "kid", "takes": 2, "variants": [{ "text": "Apua! Minun palloni!", "eleven": "[upset] Apua! Minun palloni!" }]},
+    "help-teddy": { "speaker": "kid", "takes": 2, "sample": true, "variants": [{ "text": "Apua! Minun nalleni!", "eleven": "[upset] Apua! Minun nalleni!" }]},
+    "help-flowers": { "speaker": "elder", "takes": 2, "sample": true, "variants": [{ "text": "Voi voi! Minun kukkani!", "eleven": "[upset] Voi voi! Minun kukkani!" }]},
+    "help-cake": { "speaker": "adult", "takes": 2, "sample": true, "variants": [{ "text": "Apua! Minun kakkuni!", "eleven": "[upset] Apua! Minun kakkuni!" }]},
+    "help-icecream": { "speaker": "adult", "takes": 2, "variants": [{ "text": "Apua! Minun jäätelöni!", "eleven": "[upset] Apua! Minun jäätelöni!" }]},
+    "help-gem": { "speaker": "adult", "takes": 2, "variants": [{ "text": "Apua! Minun jalokiveni!", "eleven": "[upset] Apua! Minun jalokiveni!" }]},
+    "help-gold": { "speaker": "adult", "takes": 2, "variants": [{ "text": "Apua! Minun kultani!", "eleven": "[upset] Apua! Minun kultani!" }]},
+    "help-jewels": { "speaker": "adult", "takes": 2, "variants": [{ "text": "Apua! Minun koruni!", "eleven": "[upset] Apua! Minun koruni!" }]},
+    "help-parcel": { "speaker": "adult", "takes": 2, "variants": [{ "text": "Apua! Minun pakettini!", "eleven": "[upset] Apua! Minun pakettini!" }]},
+    "help-watering": { "speaker": "adult", "takes": 2, "variants": [{ "text": "Apua! Minun kastelukannuni!", "eleven": "[upset] Apua! Minun kastelukannuni!" }]},
+    "help-toolbox": { "speaker": "adult", "takes": 2, "variants": [{ "text": "Apua! Minun työkalupakkini!", "eleven": "[upset] Apua! Minun työkalupakkini!" }]},
+
+    "thanks": { "speaker": ["kid", "elder", "adult"], "takes": 2, "sample": true, "variants": [
+      { "text": "Kiitos, poliisi!", "eleven": "[happy] Kiitos, poliisi!" },
+      { "text": "Jee, kiitos!", "eleven": "[happy] Jee, kiitos!" }
+    ]}
+  }
+}

@@ -12,7 +12,9 @@ import { backToIdle, cuff, driveAway, escortIn, follow, intoCar, officer, outOfC
 import { Z, type Scene } from './scene';
 import { showEndScreen, timeIsUp } from './session';
 import { TIMES, setPhase, state, tier, type Owner } from './state';
+import { town } from './town';
 import { Sprite, ease, tween, wait } from './tween';
+import { castRosvot, officerVoice, ownerVoice, preloadVoices, rosvoVoice, say } from './voice';
 
 let scene: Scene;
 let rosvo: Sprite;
@@ -20,6 +22,9 @@ let peekTimer = 0;
 let townTimer = 0;
 /** Bumped to cancel a rosvo's run between spots. */
 let moveGen = 0;
+/** When the officer last said a hint, so hints aren't repeated too often. */
+let lastHintLine = -Infinity;
+const officerSays = (key: string, priority = 1): void => say(key, officerVoice(town.police), priority);
 
 // Per-tier tuning: how much of the rosvo / loot shows, peek timing, how often rosvot dash.
 const PEEK_OFF = [0, 30, 52, 66];
@@ -48,7 +53,9 @@ function setTime(t: (typeof TIMES)[number]): void {
 async function startCycle(): Promise<void> {
   state.jailed = 0;
   state.costumes = randomCostumes(3);
+  castRosvot(state.costumes);
   spawnCrowd(5 + (state.cycle % 3));
+  preloadVoices([officerVoice(town.police), ...state.costumes.map(rosvoVoice), ...state.owners.map(ownerVoice)]);
   scheduleTown();
   await wait(800);
   void startRobbery();
@@ -146,6 +153,8 @@ async function startRobbery(): Promise<void> {
   v.item.show(false);
   rosvo.el.classList.add('has-sack');
   sfx.giggle();
+  say(`help-${o.item}`, ownerVoice(o), 2);
+  say('steal', rosvoVoice(c));
   await wait(250);
   v.bubble.classList.add('on');
 
@@ -347,6 +356,8 @@ async function catchRosvo(from: Pt, onTheRun: boolean): Promise<void> {
   moveGen++;
   window.clearTimeout(peekTimer);
   sfx.catch();
+  officerSays('catch', 2);
+  say('caught', rosvoVoice(costume()));
   const pv = peekerView();
   pv.peeker.classList.remove('active', 'up', 'still');
   pv.inner.innerHTML = '';
@@ -447,6 +458,7 @@ async function dropRosvo(): Promise<void> {
   rosvo.show(false);
   const n = state.jailed;
   sfx.clang();
+  officerSays('jail');
   const face = scene.windows[n].face;
   face.innerHTML = `<svg viewBox="0 0 120 100" width="76" height="64">${rosvoHead(state.costumes[n])}</svg>`;
   face.classList.add('on', 'sorry');
@@ -491,6 +503,7 @@ async function dropItem(): Promise<void> {
   v.sprite.el.classList.remove('sad');
   v.sprite.el.classList.add('happy');
   sfx.cheer();
+  say('thanks', ownerVoice(o), 2);
   sparkle(scene, { x: h.x, y: h.y - 60 }, 12);
   hearts(scene, { x: h.x, y: h.y - 150 * depth(o.pos.y) });
   await wait(1400);
@@ -511,6 +524,7 @@ async function celebrate(): Promise<void> {
   confetti(scene);
   await wait(400);
   sfx.fanfare();
+  officerSays('celebrate', 2);
   await awardSticker();
 
   // The rosvot say sorry, hop into the police car and the officer drives them away.
@@ -590,6 +604,7 @@ async function rosvotToCar(): Promise<void> {
   }
   await wait(1200);
   sfx.sorry();
+  state.costumes.forEach((c) => say('sorry', rosvoVoice(c)));
   for (const s of sprites) {
     s.el.classList.add('bow');
     hearts(scene, { x: s.x, y: s.y - 210 * s.scale });
@@ -628,6 +643,10 @@ export function hintFor(): void {
   } else return;
   state.hintOn = true;
   sfx.hint();
+  if (performance.now() - lastHintLine > 20000) {
+    lastHintLine = performance.now();
+    officerSays('hint');
+  }
 }
 
 /** Debug/test hook: logical positions of the current targets. */

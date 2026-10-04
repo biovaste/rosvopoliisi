@@ -2,6 +2,8 @@
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
+/** Sound effects go through this bus so they can be ducked under a voice line. */
+let bus: GainNode | null = null;
 let muted = false;
 
 export function unlockAudio(): void {
@@ -12,6 +14,8 @@ export function unlockAudio(): void {
     master = ctx.createGain();
     master.gain.value = muted ? 0 : 0.55;
     master.connect(ctx.destination);
+    bus = ctx.createGain();
+    bus.connect(master);
   }
   if (ctx.state === 'suspended') void ctx.resume();
   // A silent blip fully unlocks iOS Safari.
@@ -31,6 +35,16 @@ export function isMuted(): boolean {
   return muted;
 }
 
+/** The shared context and the muted master gain, once audio is unlocked. Used by voice.ts. */
+export function audioOut(): { ctx: AudioContext; master: GainNode } | null {
+  return ctx && master ? { ctx, master } : null;
+}
+
+/** Lowers the sound effects while someone speaks. */
+export function duck(on: boolean): void {
+  if (bus && ctx) bus.gain.setTargetAtTime(on ? 0.5 : 1, ctx.currentTime, 0.05);
+}
+
 interface ToneOpts {
   type?: OscillatorType;
   freq: number;
@@ -42,7 +56,7 @@ interface ToneOpts {
 }
 
 function tone(o: ToneOpts): void {
-  if (!ctx || !master) return;
+  if (!ctx || !bus) return;
   const t0 = ctx.currentTime + (o.at ?? 0);
   const osc = ctx.createOscillator();
   const g = ctx.createGain();
@@ -55,13 +69,13 @@ function tone(o: ToneOpts): void {
   g.gain.exponentialRampToValueAtTime(v, t0 + a);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
   osc.connect(g);
-  g.connect(master);
+  g.connect(bus);
   osc.start(t0);
   osc.stop(t0 + o.dur + 0.05);
 }
 
 function noise(at: number, dur: number, vol: number, freq: number): void {
-  if (!ctx || !master) return;
+  if (!ctx || !bus) return;
   const t0 = ctx.currentTime + at;
   const len = Math.floor(ctx.sampleRate * dur);
   const buf = ctx.createBuffer(1, len, ctx.sampleRate);
@@ -77,7 +91,7 @@ function noise(at: number, dur: number, vol: number, freq: number): void {
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
   src.connect(f);
   f.connect(g);
-  g.connect(master);
+  g.connect(bus);
   src.start(t0);
 }
 
@@ -125,7 +139,7 @@ export const sfx = {
     tone({ type: 'sine', freq: NOTE(88), at: 0.36, dur: 0.4, vol: 0.12 });
   },
   siren(): void {
-    if (!ctx || !master) return;
+    if (!ctx || !bus) return;
     const t0 = ctx.currentTime;
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
@@ -138,7 +152,7 @@ export const sfx = {
     g.gain.setValueAtTime(0.16, t0 + 1.95);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.15);
     osc.connect(g);
-    g.connect(master);
+    g.connect(bus);
     osc.start(t0);
     osc.stop(t0 + 2.2);
   },

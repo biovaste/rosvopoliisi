@@ -5,8 +5,9 @@ a police officer who catches silly rosvot, takes them to jail and gives the
 stolen things back to their owners.
 
 The game uses Vite and TypeScript with no game engine. Everything is drawn as
-inline SVG and every sound is synthesised with the Web Audio API, so there are
-no external assets or network requests.
+inline SVG and every sound effect is synthesised with the Web Audio API. The
+Finnish voice lines are pre-generated clips shipped with the game, so it makes
+no network requests.
 
 ## How it plays
 
@@ -113,6 +114,48 @@ street, or the day sky with a colour filter for evening and night. To add a
 missing picture, save it as `art-src/sky-evening.jpg`,
 `art-src/sky-night.jpg` or `art-src/tile-street.jpg` and run the script.
 
+## Voices
+
+The officer, the rosvot and the townspeople speak short Finnish lines at key
+moments: a theft ("Apua! Minun kakkuni!"), a catch ("Seis! Poliisi!"), the
+jail, returning the loot ("Kiitos, poliisi!"), the celebration, the rosvot's
+"Anteeksi!" and the idle hint. Each character gets a voice that matches their
+role and gender: two officer voices, four rosvo voices, four adult voices,
+two elder voices and two children's voices. Every line has a few variants and
+takes, so it doesn't repeat. Only one voice speaks at a time, and sound effects
+get quieter while it speaks. The dog and the cat don't talk.
+
+- `voice/lines.json`: what is said, by whom, with variants and takes
+- `voice/cast.json`: the voice slots and each engine's voice for them
+- `tools/make_voice.py`: generates the clips into `src/assets/voice/<slot>/<line>-<n>.mp3`
+
+The game picks clips up by file name. A line without clips is simply silent,
+so the game plays fine with no voice files at all.
+
+The generator supports several text-to-speech services, so they can be
+compared by ear:
+
+| Engine | Needs |
+|---|---|
+| `elevenlabs` | `ELEVENLABS_API_KEY` and voice ids in `voice/cast.json` |
+| `google` (fi-FI Chirp 3 HD) | `GOOGLE_API_KEY`, or a logged-in `gcloud` |
+| `chatterbox` (local, Chatterbox Multilingual) | `pip install chatterbox-tts`, and a reference recording per slot in `voice/refs/<slot>.wav` |
+| `test` | nothing; beeps instead of speech, for checking the pipeline |
+
+All of them also need `ffmpeg`.
+
+```sh
+python3 tools/make_voice.py --engine google --sample      # a few lines per voice
+python3 tools/make_voice.py --engine elevenlabs --sample
+open voice-src/compare.html                               # listen side by side
+python3 tools/make_voice.py                               # all lines, with each slot's engine from cast.json
+```
+
+Raw clips are cached in `voice-src/` (not in git), so re-runs only generate
+what is missing. Use `--force` to regenerate, `--only catch,sorry` or
+`--slots officer-f` to narrow a run, and `--build` to only re-encode the
+cache. To mix engines, set `"engine"` on a single slot in `voice/cast.json`.
+
 ## End-to-end test
 
 ```sh
@@ -141,6 +184,7 @@ error. It needs Playwright's Chromium (`npx playwright install chromium`).
 - `src/people.ts`: rosvot, townspeople and the police officer
 - `src/town.ts`: the per-session random town settings
 - `src/audio.ts`: Web Audio sound effects
+- `src/voice.ts`, `tools/make_voice.py`: Finnish voice lines and their generator
 - `src/fx.ts`: ripples, confetti, sparkles and the hint hand
 - `src/parent.ts`: hold-to-open parent panel
 - `src/layout.ts`, `src/tween.ts`: coordinates and rAF tweens
